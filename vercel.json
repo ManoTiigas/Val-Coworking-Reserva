@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/work/index.html" },
+    { "source": "/admin", "destination": "/work/gestao-valor-8f3d.html" },
+    { "source": "/app.js", "destination": "/work/app.js" },
+    { "source": "/admin.js", "destination": "/work/admin.js" },
+    { "source": "/styles.css", "destination": "/work/styles.css" }
+  ]
+}
