@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Val Coworking | Administração</title>
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"/>
+  <link rel="stylesheet" href="/admin.css"/>
+</head>
+<body>
+  <main class="admin-shell">
+    <section id="login-view" class="login-card">
+      <div class="brand">val <span>coworking</span></div>
+      <p class="eyebrow">ÁREA RESTRITA</p>
+      <h1>Administração</h1>
+      <p class="copy">Entre para visualizar reservas e pagamentos.</p>
+      <form id="login-form">
+        <label>E-mail<input name="email" type="email" autocomplete="email" required placeholder="voce@empresa.com"/></label>
+        <label>Senha<input name="password" type="password" autocomplete="current-password" required placeholder="Sua senha"/></label>
+        <p id="login-message" class="message" role="status"></p>
+        <button class="button primary" type="submit">Entrar <i class="ph ph-sign-in"></i></button>
+      </form>
+    </section>
+
+    <section id="dashboard-view" class="dashboard" hidden>
+      <header class="admin-header">
+        <div>
+          <div class="brand">val <span>coworking</span></div>
+          <p class="eyebrow">PAINEL ADMINISTRATIVO</p>
+        </div>
+        <button id="sign-out" class="button secondary">Sair <i class="ph ph-sign-out"></i></button>
+      </header>
+
+      <section class="headline">
+        <div>
+          <h1>Visão geral</h1>
+          <p>Controle de reservas e recebimentos.</p>
+        </div>
+        <button id="refresh" class="button icon-text"><i class="ph ph-arrow-clockwise"></i> Atualizar</button>
+      </section>
+
+      <section class="stats" aria-label="Resumo de reservas">
+        <article><span>Em processo</span><strong id="stat-pending">0</strong><i class="ph ph-hourglass"></i></article>
+        <article><span>Pagas</span><strong id="stat-paid">0</strong><i class="ph ph-check-circle"></i></article>
+        <article><span>Canceladas</span><strong id="stat-cancelled">0</strong><i class="ph ph-x-circle"></i></article>
+        <article><span>Total</span><strong id="stat-total">0</strong><i class="ph ph-calendar-blank"></i></article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">RESERVAS</p>
+            <h2>Agenda e pagamentos</h2>
+          </div>
+          <div class="filters">
+            <select id="status-filter" aria-label="Filtrar por status">
+              <option value="all">Todos os status</option>
+              <option value="pending_payment">Em processo</option>
+              <option value="paid">Pago</option>
+              <option value="cancelled">Cancelado</option>
+              <option value="expired">Expirado</option>
+              <option value="failed">Falhou</option>
+            </select>
+            <input id="date-filter" type="date" aria-label="Filtrar por data"/>
+          </div>
+        </div>
+        <p id="dashboard-message" class="message" role="status"></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Reserva</th><th>Cliente</th><th>Espaço</th><th>Data e horário</th><th>Status</th></tr></thead>
+            <tbody id="bookings-list"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="/admin.js"></script>
+</body>
+</html>
