@@ -215,8 +215,15 @@ function createSlots(rate) {
     return [{ key: 'evento', label: `${rate.start_time.slice(0, 5)} às 00:00`, start, end }];
   }
   if (rate.booking_unit === 'day') {
-    const endTime = day === 6 ? '13:00' : '18:00';
-    return [{ key: 'diaria', label: `Diária · 08:00 às ${endTime}`, start: at(state.day, '08:00'), end: at(state.day, endTime) }];
+    const startTime = rate.start_time.slice(0, 5);
+    const endTime = rate.end_time.slice(0, 5);
+    const endsNextDay = endTime === '00:00';
+    return [{
+      key: 'diaria',
+      label: `Diária · ${startTime} às ${endTime}`,
+      start: at(state.day, startTime),
+      end: at(endsNextDay ? new Date(state.day.getTime() + 86400000) : state.day, endTime)
+    }];
   }
   if (rate.booking_unit === 'month') {
     const start = at(state.day, '08:00');
