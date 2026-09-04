@@ -6,6 +6,9 @@
   <title>Val Coworking | Administração</title>
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"/>
   <link rel="stylesheet" href="/admin.css"/>
+  <style>
+    .contract-panel{margin-bottom:22px}.private-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#d5f2df;color:#176536;font-size:11px;font-weight:800}.contract-copy{max-width:680px;margin:14px 0;color:#6a6870;font-size:14px;line-height:1.5}.contract-status{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:16px 0;padding:14px 16px;border-radius:12px;background:#f6f5f1;border:1px solid #e2dfd7}.contract-status strong,.contract-status small{display:block}.contract-status small{margin-top:3px;color:#6a6870}.contract-status .button{white-space:nowrap}.contract-upload-form{grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px}.contract-upload-form .message{grid-column:1/-1}.contract-upload-form input[type=file]{background:#fff;padding:10px}.cancel-booking{color:#a90000;border-color:#a90000;background:#fff7f7}.trash-panel{margin-top:22px}.trash-copy{color:#6a6870;font-size:14px}.delete-booking{color:#a90000;border-color:#a90000;background:#fff7f7}@media(max-width:760px){.contract-status,.contract-upload-form{grid-template-columns:1fr;display:grid}.contract-status .button,.contract-upload-form .button{width:100%}}
+  </style>
 </head>
 <body>
   <main class="admin-shell">
@@ -46,6 +49,25 @@
         <article><span>Total</span><strong id="stat-total">0</strong><i class="ph ph-calendar-blank"></i></article>
       </section>
 
+      <section id="contract-upload" class="panel contract-panel" hidden>
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">CONTRATO DIGITAL</p>
+            <h2>Contrato usado nos planos</h2>
+          </div>
+          <span class="private-badge"><i class="ph ph-lock-key"></i> Privado</span>
+        </div>
+        <p class="contract-copy">Envie o DOCX padrão. Ele fica protegido no Supabase e é usado apenas para gerar contratos na Clicksign.</p>
+        <div id="contract-status" class="contract-status" aria-live="polite">
+          <div><strong>Verificando contrato…</strong><small>Somente administradores podem acessá-lo.</small></div>
+        </div>
+        <form id="contract-upload-form" class="contract-upload-form">
+          <label>Arquivo DOCX<input id="contract-file" name="contract" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required/></label>
+          <button class="button primary" type="submit"><i class="ph ph-upload-simple"></i> Salvar contrato privado</button>
+          <p id="contract-upload-message" class="message" role="status"></p>
+        </form>
+      </section>
+
       <section class="panel">
         <div class="panel-head">
           <div>
@@ -62,16 +84,18 @@
               <option value="failed">Falhou</option>
             </select>
             <input id="date-filter" type="date" aria-label="Filtrar por data"/>
+            <button id="trash-toggle" class="button ghost" type="button"><i class="ph ph-trash"></i> Lixeira</button>
           </div>
         </div>
         <p id="dashboard-message" class="message" role="status"></p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Reserva</th><th>Cliente</th><th>Espaço</th><th>Data e horário</th><th>Status</th></tr></thead>
+            <thead><tr><th>Reserva</th><th>Cliente</th><th>Espaço</th><th>Data e horário</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody id="bookings-list"></tbody>
           </table>
         </div>
       </section>
+
     </section>
   </main>
   <script type="module" src="/admin.js"></script>

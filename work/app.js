@@ -8,6 +8,9 @@ document.head.appendChild(oldCheckoutStyle);
 const bookingFlowStyle = document.createElement('style');
 bookingFlowStyle.textContent = `.choice b{font-family:'Season Mix-TRIAL','Season Mix',Georgia,serif}.rate-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}.rate-option{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:70px;padding:13px;border:1px solid #d9a64b;border-radius:12px;background:#003833;color:#fff;font:inherit;text-align:left;cursor:pointer}.rate-option strong{font-size:18px}.rate-option small{color:#bdd1cb}.rate-option.active{background:#d9a64b;color:#001e1b}.rate-option.active small{color:#244039}@media(max-width:520px){.rate-grid{grid-template-columns:1fr}}`;
 document.head.appendChild(bookingFlowStyle);
+const paymentEaseStyle = document.createElement('style');
+paymentEaseStyle.textContent = `#payment-summary{display:grid!important;gap:13px!important}.booking-ref{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;font-size:14px;font-weight:800}.booking-ref span{padding:5px 8px;border-radius:999px;background:rgba(217,166,75,.16);color:#e5b14e;font-size:10px;letter-spacing:.06em}.booking-details{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid rgba(217,166,75,.24)}.booking-detail{display:grid;gap:2px}.booking-detail small{color:#aabdb8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.booking-detail b{color:#fff;font-size:14px}.booking-detail.total{grid-column:1/-1;padding-top:10px;border-top:1px solid rgba(217,166,75,.18)}.booking-detail.total b{color:#e5b14e;font-size:20px}.payment-help{margin:20px 0 10px!important;color:#dce8e4!important;font-size:14px!important}.payment-methods{gap:12px!important;margin:0!important}.payment-methods .payment-choice{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;min-height:76px!important;padding:14px 17px!important;border:1px solid rgba(217,166,75,.58)!important;border-radius:13px!important;text-align:left!important}.payment-methods .payment-choice--recommended{background:#d9a64b!important;color:#001e1b!important;border-color:#d9a64b!important}.payment-choice .method-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:rgba(0,30,27,.13);font-size:20px}.payment-choice:not(.payment-choice--recommended) .method-icon{background:rgba(217,166,75,.13);color:#e5b14e}.payment-choice .method-copy{display:grid;gap:3px}.payment-choice .method-copy b{font-size:14px}.payment-choice .method-copy small{font-size:11px;font-weight:500;opacity:.78}.payment-methods .payment-choice i{font-size:20px!important}.payment-choice .method-arrow{margin-left:auto;font-size:18px!important}@media(max-width:520px){.booking-details{grid-template-columns:1fr}.payment-methods .payment-choice{min-height:70px!important}}`;
+document.head.appendChild(paymentEaseStyle);
 const $ = (id) => document.getElementById(id);
 const steps = ['espaco', 'agenda', 'dados', 'pagamento'];
 const state = { space: null, date: new Date(), day: null, rate: null, slot: null, booking: null };
@@ -43,7 +46,7 @@ function renderSummary() {
 
 function renderPayment() {
   if (!state.booking) return;
-  $('payment-summary').innerHTML = `<b>Reserva ${state.booking.booking_code}</b><br>${state.booking.space_name}<br>${state.booking.slot_label}<br><strong>${money(state.booking.amount_cents)}</strong><br>Horário retido por 24 horas.`;
+  $('payment-summary').innerHTML = `<div class="booking-ref"><span>RESERVA</span>${state.booking.booking_code}</div><div class="booking-details"><div class="booking-detail"><small>Espaço</small><b>${state.booking.space_name}</b></div><div class="booking-detail"><small>Horário</small><b>${state.booking.slot_label}</b></div><div class="booking-detail total"><small>Total a pagar</small><b>${money(state.booking.amount_cents)}</b></div></div><small>Seu horário está reservado por 24 horas.</small>`;
 }
 
 async function createPix() {
@@ -55,7 +58,7 @@ async function createPix() {
     body: { booking_id: state.booking.id, payment_token: state.booking.payment_token }
   });
   button.disabled = false;
-  button.innerHTML = '<i class="ph ph-qr-code"></i> Pagar com Pix';
+  button.innerHTML = pixButtonMarkup();
   if (error || !data?.qr_code_base64) {
     let message = data?.error || 'Não foi possível gerar o Pix. Tente novamente.';
     if (error?.context) {
@@ -300,10 +303,17 @@ $('booking-form').onsubmit = async (event) => {
 };
 
 $('pay-pix').onclick = createPix;
+function pixButtonMarkup() {
+  return '<span class="method-icon"><i class="ph ph-qr-code"></i></span><span class="method-copy"><b>Pix</b><small>Gere o QR Code para pagar agora</small></span><i class="ph ph-caret-right method-arrow"></i>';
+}
+const pixButton = $('pay-pix');
+pixButton.className = 'button payment-choice payment-choice--recommended';
+pixButton.innerHTML = pixButtonMarkup();
 const cardButton = document.querySelector('.payment-methods button[disabled]');
 cardButton.disabled = false;
 cardButton.id = 'pay-card';
-cardButton.innerHTML = '<i class="ph ph-credit-card"></i> Pagar com cartão';
+cardButton.className = 'button payment-choice';
+cardButton.innerHTML = '<span class="method-icon"><i class="ph ph-credit-card"></i></span><span class="method-copy"><b>Cartão</b><small>Informe os dados do cartão</small></span><i class="ph ph-caret-right method-arrow"></i>';
 cardButton.onclick = openCardPayment;
 
 loadSpaces();
