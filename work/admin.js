@@ -92,6 +92,7 @@ $('refresh').onclick=()=>{load();loadContractAccess();};
 $('status-filter').onchange=render;
 $('date-filter').onchange=render;
 $('trash-toggle').onclick=()=>{trashMode=!trashMode;$('status-filter').value='all';$('date-filter').value='';render();};
+$('contract-file').onchange=event=>{$('contract-file-name').textContent=event.target.files?.[0]?.name||'Nenhum arquivo selecionado';};
 $('contract-upload-form').onsubmit=async event=>{
   event.preventDefault();
   const form=event.currentTarget;
@@ -105,7 +106,7 @@ $('contract-upload-form').onsubmit=async event=>{
   const {error}=await sb.storage.from('contracts').upload('Contrato_VAL_COWORKING_LASFER_REVISADO_FINAL.docx',file,{upsert:true,contentType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
   button.disabled=false;
   if(error){setMessage('contract-upload-message','Não foi possível salvar o contrato.');return;}
-  form.reset();await loadContractStatus();setMessage('contract-upload-message','Contrato privado salvo. Novas solicitações já usarão esta versão.');
+  form.reset();$('contract-file-name').textContent='Nenhum arquivo selecionado';await loadContractStatus();setMessage('contract-upload-message','Contrato privado salvo. Novas solicitações já usarão esta versão.');
 };
 sb.auth.onAuthStateChange((_event,current)=>{showDashboard(Boolean(current));if(current){load();loadContractAccess();}});
 session();
