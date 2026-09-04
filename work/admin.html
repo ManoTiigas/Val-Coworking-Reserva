@@ -10,13 +10,13 @@
     .contract-panel{margin-bottom:22px}.private-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#d5f2df;color:#176536;font-size:11px;font-weight:800}.contract-copy{max-width:680px;margin:14px 0;color:#6a6870;font-size:14px;line-height:1.5}.contract-status{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:16px 0;padding:14px 16px;border-radius:12px;background:#f6f5f1;border:1px solid #e2dfd7}.contract-status strong,.contract-status small{display:block}.contract-status small{margin-top:3px;color:#6a6870}.contract-status .button{white-space:nowrap}.contract-upload-form{grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px}.contract-upload-form .message{grid-column:1/-1}.contract-upload-form input[type=file]{background:#fff;padding:10px}.cancel-booking{color:#a90000;border-color:#a90000;background:#fff7f7}.trash-panel{margin-top:22px}.trash-copy{color:#6a6870;font-size:14px}.delete-booking{color:#a90000;border-color:#a90000;background:#fff7f7}@media(max-width:760px){.contract-status,.contract-upload-form{grid-template-columns:1fr;display:grid}.contract-status .button,.contract-upload-form .button{width:100%}}
   </style>
   <style>
-    .contract-copy,.trash-copy{color:#ccdad6}.contract-status{background:#003a33;border-color:rgba(221,169,67,.3)}.contract-status small{color:#b5c9c3}.contract-upload-form input[type=file]{background:#003a33}.cancel-booking,.delete-booking{color:#ffe3e5;border-color:#e78a91;background:#4a2023}.private-badge{background:#d5f2df;color:#176536}.login-card h1{color:#f8f4ea}.login-card h1 em,.headline h1 em{color:#dda943}
+    .contract-copy,.trash-copy{color:#ccdad6}.contract-status{background:#003a33;border-color:rgba(221,169,67,.3)}.contract-status small{color:#b5c9c3}.contract-upload-form input[type=file]{background:#003a33}.cancel-booking,.delete-booking{color:#ffe3e5;border-color:#e78a91;background:#4a2023}.private-badge{background:#d5f2df;color:#176536}.login-card h1{color:#f8f4ea}.login-card h1 em,.headline h1 em{color:#dda943}.brand:before{display:none}.brand{display:block}.brand-logo{display:block;width:116px;height:48px;object-fit:contain;object-position:left center}.login-card .brand{margin-bottom:36px}
   </style>
 </head>
 <body>
   <main class="admin-shell">
     <section id="login-view" class="login-card">
-      <div class="brand">val <span>coworking</span></div>
+      <div class="brand"><img class="brand-logo" src="/images/val-coworking-logo.png" alt="Val Coworking"/></div>
       <p class="eyebrow">ÁREA RESTRITA</p>
       <h1>Painel<br/><em>Administrativo</em></h1>
       <p class="copy">Entre para visualizar reservas e pagamentos.</p>
@@ -31,7 +31,7 @@
     <section id="dashboard-view" class="dashboard" hidden>
       <header class="admin-header">
         <div>
-          <div class="brand">val <span>coworking</span></div>
+          <div class="brand"><img class="brand-logo" src="/images/val-coworking-logo.png" alt="Val Coworking"/></div>
           <p class="eyebrow">PAINEL ADMINISTRATIVO</p>
         </div>
         <button id="sign-out" class="button secondary">Sair <i class="ph ph-sign-out"></i></button>
