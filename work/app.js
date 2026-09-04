@@ -238,6 +238,12 @@ function createSlots(rate) {
   return hours.map((hour) => ({ key: String(hour), label: `${String(hour).padStart(2, '0')}:00`, start: at(state.day, `${String(hour).padStart(2, '0')}:00`), end: at(state.day, `${String(hour + 1).padStart(2, '0')}:00`) }));
 }
 
+function ensureFixedSlot() {
+  if (state.day && state.rate && state.rate.booking_unit !== 'hour' && !state.slot) {
+    state.slot = createSlots(state.rate)[0];
+  }
+}
+
 async function renderSlots() {
   if (!state.rate || !state.day) return;
   const slots = createSlots(state.rate);
@@ -265,6 +271,7 @@ document.querySelectorAll('[data-next]').forEach((button) => {
   button.onclick = () => {
     const next = button.dataset.next;
     if (next === 'agenda' && !state.space) return notice('Escolha um espaço para continuar.');
+    if (next === 'dados') ensureFixedSlot();
     if (next === 'dados' && (!state.day || !state.rate || !state.slot)) return notice('Escolha data, modalidade e horário para continuar.');
     renderSummary();
     go(next);
