@@ -1,0 +1,8 @@
+# Documentação e anotações internas
+/docs/
+
+# Arquivos privados locais
+/work/assets/
+
+# Saída de ferramentas locais
+/graphify-out/
