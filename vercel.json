@@ -7,6 +7,7 @@
     { "source": "/admin.js", "destination": "/work/admin.js" },
     { "source": "/admin.css", "destination": "/work/admin.css" },
     { "source": "/planos.js", "destination": "/work/planos.js" },
-    { "source": "/styles.css", "destination": "/work/styles.css" }
+    { "source": "/styles.css", "destination": "/work/styles.css" },
+    { "source": "/images/(.*)", "destination": "/work/images/$1" }
   ]
 }
