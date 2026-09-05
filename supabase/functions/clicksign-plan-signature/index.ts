@@ -4,7 +4,7 @@ const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
+  "Content-Type": "application/json; charset=utf-8",
 };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
 const clicksignHeaders = (token: string) => ({ Authorization: token, "Content-Type": "application/vnd.api+json", Accept: "application/vnd.api+json" });
