@@ -218,8 +218,11 @@ function createSlots(rate) {
     return [{ key: 'evento', label: `${rate.start_time.slice(0, 5)} às 00:00`, start, end }];
   }
   if (rate.booking_unit === 'day') {
-    const startTime = rate.start_time.slice(0, 5);
-    const endTime = rate.end_time.slice(0, 5);
+    // Daily rates occupy every bookable hour for that date. Older rates may not
+    // have times stored, so keep the same hours enforced by create_booking_hold.
+    const startTime = typeof rate.start_time === 'string' ? rate.start_time.slice(0, 5) : '08:00';
+    const defaultEndTime = state.day.getDay() === 6 ? '13:00' : '18:00';
+    const endTime = typeof rate.end_time === 'string' ? rate.end_time.slice(0, 5) : defaultEndTime;
     const endsNextDay = endTime === '00:00';
     return [{
       key: 'diaria',
