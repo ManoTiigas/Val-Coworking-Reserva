@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
   const sb = createClient(supabaseUrl, serviceKey);
   const { data: app, error: lookupError } = await sb.from("plan_applications")
-    .select("id,request_code,access_token,plan_name,amount_cents,billing_label,customer_name,customer_email,customer_phone,customer_document,company_name,company_cnpj,contract_status,clicksign_envelope_id,clicksign_document_id,clicksign_signer_id,clicksign_ready_at")
+    .select("id,request_code,access_token,plan_name,amount_cents,billing_label,customer_name,customer_email,customer_phone,customer_address,customer_document,company_name,company_cnpj,contract_status,clicksign_envelope_id,clicksign_document_id,clicksign_signer_id,clicksign_ready_at")
     .eq("id", application_id).eq("access_token", access_token).maybeSingle();
   if (lookupError || !app) return reply({ error: "Solicitação não encontrada." }, 404);
 
@@ -90,7 +90,9 @@ Deno.serve(async (req) => {
     if (!documentId) {
       const templateData = {
         NOME_ASSINANTE: app.customer_name,
+        EMAIL_ASSINANTE: app.customer_email,
         TELEFONE_ASSINANTE: app.customer_phone,
+        ENDERECO_CONTRATANTE: app.customer_address,
         CPF_CNPJ_ASSINANTE: customerDocument,
         NOME_EMPRESA: app.company_name || "Não informado",
         CNPJ_EMPRESA: app.company_cnpj || (customerDocument.length === 14 ? customerDocument : "Não informado"),
