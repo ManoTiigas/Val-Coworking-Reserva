@@ -6,3 +6,6 @@
 
 # Saída de ferramentas locais
 /graphify-out/
+
+.vercel
+supabase/.temp/

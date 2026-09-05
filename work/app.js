@@ -16,8 +16,41 @@ const paymentEaseStyle = document.createElement('style');
 paymentEaseStyle.textContent = `#payment-summary{display:grid!important;gap:13px!important}.booking-ref{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;font-size:14px;font-weight:800}.booking-ref span{padding:5px 8px;border-radius:999px;background:rgba(217,166,75,.16);color:#e5b14e;font-size:10px;letter-spacing:.06em}.booking-details{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid rgba(217,166,75,.24)}.booking-detail{display:grid;gap:2px}.booking-detail small{color:#aabdb8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.booking-detail b{color:#fff;font-size:14px}.booking-detail.total{grid-column:1/-1;padding-top:10px;border-top:1px solid rgba(217,166,75,.18)}.booking-detail.total b{color:#e5b14e;font-size:20px}.payment-help{margin:20px 0 10px!important;color:#dce8e4!important;font-size:14px!important}.payment-methods{gap:12px!important;margin:0!important}.payment-methods .payment-choice{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;min-height:76px!important;padding:14px 17px!important;border:1px solid rgba(217,166,75,.58)!important;border-radius:13px!important;text-align:left!important}.payment-methods .payment-choice--recommended{background:#d9a64b!important;color:#001e1b!important;border-color:#d9a64b!important}.payment-choice .method-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:rgba(0,30,27,.13);font-size:20px}.payment-choice:not(.payment-choice--recommended) .method-icon{background:rgba(217,166,75,.13);color:#e5b14e}.payment-choice .method-copy{display:grid;gap:3px}.payment-choice .method-copy b{font-size:14px}.payment-choice .method-copy small{font-size:11px;font-weight:500;opacity:.78}.payment-methods .payment-choice i{font-size:20px!important}.payment-choice .method-arrow{margin-left:auto;font-size:18px!important}@media(max-width:520px){.booking-details{grid-template-columns:1fr}.payment-methods .payment-choice{min-height:70px!important}}`;
 document.head.appendChild(paymentEaseStyle);
 const $ = (id) => document.getElementById(id);
-const steps = ['espaco', 'agenda', 'dados', 'pagamento'];
+const steps = ['espaco', 'agenda', 'dados', 'contrato', 'pagamento'];
 const state = { space: null, date: new Date(), day: null, rate: null, slot: null, booking: null };
+const monthlyContractStep = document.createElement('section');
+monthlyContractStep.className = 'step';
+monthlyContractStep.dataset.step = 'contrato';
+monthlyContractStep.innerHTML = '<div class="card payment"><p class="eyebrow">CONTRATO MENSAL</p><h2>Assine seu contrato</h2><p>O pagamento será liberado após a assinatura digital.</p><div id="booking-contract" class="summary"></div><div class="actions"><button class="button secondary" data-back="dados"><i class="ph ph-arrow-left"></i> Voltar</button></div></div>';
+document.querySelector('[data-step="pagamento"]').before(monthlyContractStep);
+
+function monthlyFields() {
+  let fields = $('monthly-contract-fields');
+  if (state.rate?.booking_unit !== 'month') { fields?.remove(); return; }
+  if (!fields) { fields = document.createElement('div'); fields.id = 'monthly-contract-fields'; fields.className = 'form'; $('form-status').before(fields); }
+  fields.innerHTML = '<label>Empresa<input required name="company" placeholder="Nome da empresa"/></label><label>CPF ou CNPJ<input required name="document" inputmode="numeric" placeholder="000.000.000-00"/></label><label style="grid-column:1/-1">Endereço atual<input required name="address" placeholder="Rua, número, bairro, cidade/UF e CEP"/></label>';
+}
+
+async function bookingContract(action) {
+  const { data, error } = await sb.functions.invoke('clicksign-booking-signature', { body: { booking_id: state.booking.id, payment_token: state.booking.payment_token, action } });
+  if (error) { const body = await error.context?.json().catch(() => null); throw new Error(body?.error || error.message); }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+async function mountBookingContract() {
+  go('contrato');
+  const area = $('booking-contract');
+  area.textContent = 'Preparando o contrato para assinatura…';
+  try {
+    const result = await bookingContract('create');
+    if (result.signed) { renderPayment(); go('pagamento'); return; }
+    if (result.environment === 'production' && location.protocol !== 'https:') { area.textContent = 'Abra esta etapa pelo site publicado para assinar com segurança.'; return; }
+    if (!window.Clicksign) await new Promise((resolve, reject) => { const script = document.createElement('script'); script.src = 'https://cdn-public-library.clicksign.com/embedded/embedded.min-2.1.0.js'; script.onload = resolve; script.onerror = reject; document.body.append(script); });
+    area.innerHTML = '<div id="booking-clicksign" style="height:560px;background:#fff;border-radius:10px;overflow:hidden"></div><button id="verify-booking-contract" class="button primary" style="margin-top:14px">Já assinei — verificar</button>';
+    const widget = new window.Clicksign(result.signer_id); widget.endpoint = result.environment === 'production' ? 'https://app.clicksign.com' : 'https://sandbox.clicksign.com'; widget.origin = location.origin; widget.mount('booking-clicksign');
+    $('verify-booking-contract').onclick = async () => { const status = await bookingContract('status'); if (status.signed) { renderPayment(); go('pagamento'); } else notice('A assinatura ainda está pendente.'); };
+  } catch (error) { area.textContent = error.message || 'Não foi possível preparar o contrato.'; }
+}
 
 const iso = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const at = (date, time) => new Date(`${iso(date)}T${time}:00-03:00`);
@@ -200,6 +233,7 @@ function renderRates() {
     button.onclick = () => {
       state.rate = rates.find((rate) => rate.id === button.dataset.rate);
       state.slot = null;
+      monthlyFields();
       renderRates();
       if (state.rate.booking_unit === 'hour') {
         renderSlots();
@@ -302,7 +336,10 @@ $('booking-form').onsubmit = async (event) => {
     p_end_at: end.toISOString(),
     p_customer_name: form.get('name'),
     p_customer_email: form.get('email'),
-    p_customer_phone: form.get('phone')
+    p_customer_phone: form.get('phone'),
+    p_customer_document: form.get('document'),
+    p_customer_address: form.get('address'),
+    p_company_name: form.get('company')
   });
   button.disabled = false;
   if (error) {
@@ -312,6 +349,7 @@ $('booking-form').onsubmit = async (event) => {
   const booking = { ...data[0], space_name: state.space.name, slot_label: state.slot.label };
   state.booking = booking;
   sessionStorage.setItem('val-coworking-payment', JSON.stringify(booking));
+  if (state.rate.booking_unit === 'month') { mountBookingContract(); return; }
   renderPayment();
   go('pagamento');
 };

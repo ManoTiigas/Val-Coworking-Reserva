@@ -4,6 +4,15 @@ const sb=createClient('https://htsnhqyhhlzqjgqlgkvt.supabase.co','sb_publishable
 const mercadoPagoPublicKey='APP_USR-02015adc-df8b-4c73-ae52-80796f6e4284';
 const plans={fiscal_monthly:{name:'Endereço Fiscal',price:'R$ 78,00',period:'Mensal'},fiscal_annual:{name:'Endereço Fiscal',price:'R$ 698,00',period:'Anual à vista'},fiscal_biennial:{name:'Endereço Fiscal',price:'R$ 912,00',period:'Bianual à vista'},premium_monthly:{name:'Plano Premium',price:'R$ 198,00',period:'Mensal'},premium_annual:{name:'Plano Premium',price:'R$ 1.699,00',period:'Anual à vista'},premium_biennial:{name:'Plano Premium',price:'R$ 2.199,00',period:'Bianual à vista'}};
 const $=id=>document.getElementById(id);const state={plan:null,application:null,widget:null};
+const planDataStyle=document.createElement('style');
+planDataStyle.textContent='[data-step="dados"] .selection{display:grid;gap:5px;padding:18px;border-radius:15px}[data-step="dados"] .selection small{color:#fff;font-size:15px;font-weight:700}[data-step="dados"] .selection .summary-price{text-align:left}[data-step="dados"] .form{grid-template-columns:1fr;gap:15px}[data-step="dados"] .form label{grid-column:1/-1}[data-step="dados"] .form .actions{grid-column:1/-1}';
+document.head.append(planDataStyle);
+const planDataPanel=document.querySelector('[data-step="dados"] .panel');
+planDataPanel.querySelector('h2').textContent='Seus dados';
+planDataPanel.querySelector('.eyebrow + h2 + p').textContent='Vamos usar estes dados para confirmar seu plano.';
+const planForm=$('plan-form'),planStatus=$('form-status');
+['name','email','phone','company','document','address'].forEach(name=>{const label=planForm.elements[name].closest('label');label.classList.remove('full');planForm.insertBefore(label,planStatus);});
+planForm.elements.address.closest('label').firstChild.textContent='Endereço atual';
 function go(step){document.querySelectorAll('.step').forEach(el=>el.classList.toggle('active',el.dataset.step===step));const index=['plano','dados','contrato','pagamento'].indexOf(step);document.querySelectorAll('.progress i').forEach((el,i)=>el.classList.toggle('active',i<=index));history.replaceState({},'',`?etapa=${step}`);window.scrollTo({top:0,behavior:'smooth'});}
 function alert(message){const el=$('notice');el.textContent=message;el.hidden=!message;}
 function paymentMessage(message,kind='notice'){$('payment-status').className=kind;$('payment-status').textContent=message;$('payment-status').hidden=!message;}
