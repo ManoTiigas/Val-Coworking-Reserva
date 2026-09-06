@@ -12,8 +12,16 @@
   <style>
     .contract-copy,.trash-copy{color:#ccdad6}.contract-status{background:#003a33;border-color:rgba(221,169,67,.3)}.contract-status small{color:#b5c9c3}.contract-upload-form input[type=file]{background:#003a33}.cancel-booking,.delete-booking{color:#ffe3e5;border-color:#e78a91;background:#4a2023}.private-badge{background:#d5f2df;color:#176536}.login-card h1{color:#f8f4ea}.login-card h1 em,.headline h1 em{color:#dda943}.brand:before{display:none}.brand{display:block}.brand-logo{display:block;width:116px;height:48px;object-fit:contain;object-position:left center}.login-card .brand{margin-bottom:36px}.file-picker{position:relative;display:grid;gap:7px;cursor:pointer}.file-picker input{position:absolute;width:1px;height:1px;opacity:0}.file-picker-ui{display:flex;align-items:center;gap:10px;min-height:46px;padding:7px;border:1px dashed rgba(221,169,67,.55);border-radius:10px;background:#003a33}.file-picker-button{display:inline-flex;align-items:center;gap:7px;padding:9px 11px;border-radius:7px;background:#dda943;color:#001d1a;font-size:11px;font-weight:800;white-space:nowrap}.file-picker-name{overflow:hidden;color:#c9d8d3;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
   </style>
+<style>*{font-family:'DM Sans',Arial,sans-serif!important}.dashboard{display:grid;grid-template-columns:230px minmax(0,1fr);gap:26px}.admin-header{grid-row:1 / span 4;align-self:start;position:sticky;top:22px;min-height:calc(100vh - 84px);padding:22px;border:1px solid rgba(221,169,67,.3);border-radius:20px;background:rgba(0,29,26,.7);flex-direction:column;align-items:flex-start}.admin-header .brand{margin-bottom:4px}.admin-header .button{margin-top:auto;width:100%}.headline,.stats,.panel{grid-column:2}.headline{margin:0}.headline h1{font-size:clamp(38px,5vw,54px)}.stats{margin:0}.panel{margin-top:0}@media(max-width:800px){.dashboard{display:block}.admin-header{position:static;min-height:0;margin-bottom:24px;flex-direction:row;align-items:center}.admin-header .button{width:auto;margin-top:0}.headline,.stats,.panel{margin-bottom:18px}}</style>
+<style>em{font-style:normal!important}</style>
 </head>
 <body>
+  <style>
+    .admin-nav{display:grid;gap:5px;width:100%;margin-top:30px}
+    .admin-nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 11px;border:0;border-radius:10px;background:transparent;color:#9bb9b0;font:inherit;font-size:12px;font-weight:700;text-align:left;cursor:pointer;transition:.16s}
+    .admin-nav-item i{font-size:17px}.admin-nav-item:hover{background:rgba(255,255,255,.06);color:#fff}.admin-nav-item.active{background:#075047;color:#fff;box-shadow:inset 3px 0 #dda943}.admin-nav-item.active i{color:#e6b657}
+    @media(max-width:800px){.admin-nav{display:flex;order:3;overflow:auto;margin:8px 0 0;padding-bottom:2px}.admin-nav-item{width:auto;flex:0 0 auto}.admin-nav-item span{white-space:nowrap}}
+  </style>
   <main class="admin-shell">
     <section id="login-view" class="login-card">
       <div class="brand"><img class="brand-logo" src="/images/val-coworking-logo.png" alt="Val Coworking"/></div>
@@ -34,13 +42,22 @@
           <div class="brand"><img class="brand-logo" src="/images/val-coworking-logo.png" alt="Val Coworking"/></div>
           <p class="eyebrow">PAINEL ADMINISTRATIVO</p>
         </div>
+        <nav class="admin-nav" aria-label="Seções administrativas">
+          <button class="admin-nav-item active" type="button" data-admin-view="home"><i class="ph ph-squares-four"></i><span>Visão geral</span></button>
+          <button class="admin-nav-item" type="button" data-admin-view="reservations"><i class="ph ph-calendar-blank"></i><span>Reservas</span></button>
+          <button class="admin-nav-item" type="button" data-admin-view="pending_payment"><i class="ph ph-hourglass"></i><span>Em processo</span></button>
+          <button class="admin-nav-item" type="button" data-admin-view="paid"><i class="ph ph-check-circle"></i><span>Pagamentos</span></button>
+          <button class="admin-nav-item" type="button" data-admin-view="cancelled"><i class="ph ph-x-circle"></i><span>Cancelamentos</span></button>
+          <button class="admin-nav-item" type="button" data-admin-view="trash"><i class="ph ph-trash"></i><span>Lixeira</span></button>
+          <button class="admin-nav-item" type="button" data-admin-view="contract"><i class="ph ph-file-doc"></i><span>Contrato</span></button>
+        </nav>
         <button id="sign-out" class="button secondary">Sair <i class="ph ph-sign-out"></i></button>
       </header>
 
       <section class="headline">
         <div>
-          <h1>Visão <em>geral</em></h1>
-          <p>Controle de reservas e recebimentos.</p>
+          <h1 id="dashboard-title">Visão <em>geral</em></h1>
+          <p id="dashboard-subtitle">Controle de reservas e recebimentos.</p>
         </div>
         <button id="refresh" class="button icon-text"><i class="ph ph-arrow-clockwise"></i> Atualizar</button>
       </section>

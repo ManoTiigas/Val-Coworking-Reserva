@@ -1,13 +1,8 @@
 {
+  "outputDirectory": "work",
   "rewrites": [
-    { "source": "/", "destination": "/work/index.html" },
-    { "source": "/planos", "destination": "/work/planos.html" },
-    { "source": "/admin", "destination": "/work/admin.html" },
-    { "source": "/app.js", "destination": "/work/app.js" },
-    { "source": "/admin.js", "destination": "/work/admin.js" },
-    { "source": "/admin.css", "destination": "/work/admin.css" },
-    { "source": "/planos.js", "destination": "/work/planos.js" },
-    { "source": "/styles.css", "destination": "/work/styles.css" },
-    { "source": "/images/(.*)", "destination": "/work/images/$1" }
+    { "source": "/planos", "destination": "/planos.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

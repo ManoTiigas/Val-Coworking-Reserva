@@ -6,6 +6,9 @@ const reservationFont = document.createElement('link');
 reservationFont.rel = 'stylesheet';
 reservationFont.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,600&display=swap';
 document.head.appendChild(reservationFont);
+const fixedFontStyle = document.createElement('style');
+fixedFontStyle.textContent = `*{font-family:'DM Sans',Arial,sans-serif!important;font-style:normal!important}`;
+document.head.appendChild(fixedFontStyle);
 const oldCheckoutStyle = document.createElement('style');
 oldCheckoutStyle.textContent = `.payment{padding:18px;background:linear-gradient(135deg,#002b27,#001715)!important;color:#fff!important;border-color:rgba(217,166,75,.65)!important}.payment:before{display:none}.payment .eyebrow{color:#d9a64b!important}.payment h2{color:#fff!important;font-size:24px!important}.payment>p{color:#9aafaa!important}.payment .summary{margin:17px 0!important;padding:14px!important;border:1px solid rgba(217,166,75,.35)!important;border-radius:9px!important;background:#003833!important;color:#eff6f4!important;box-shadow:none!important}.payment .summary strong{color:#eff6f4!important;font-size:inherit!important}.payment-methods{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}.payment-methods .button{min-height:auto!important;flex-direction:row!important;border:1px solid rgba(217,166,75,.5)!important;border-radius:999px!important;background:transparent!important;color:#f1f1e9!important;font-size:11px!important;text-transform:none!important;box-shadow:none!important}.payment-methods .button i{font-size:16px!important;color:#d9a64b!important}.payment-methods #pay-pix{border:0!important;background:#d9a64b!important;color:#001e1b!important}.payment-methods #pay-pix i{color:#001e1b!important}.payment .button.secondary{color:#f1f1e9!important;border-color:rgba(217,166,75,.5)!important}.payment .pix-box{background:#003833!important;border-color:rgba(217,166,75,.65)!important;color:#eff6f4!important}.payment .pix-code{background:#001e1b!important;border-color:#315a54!important;color:#fff!important}.payment #card-payment-area{padding:0!important;border:0!important;background:transparent!important}`;
 document.head.appendChild(oldCheckoutStyle);
@@ -18,6 +21,7 @@ document.head.appendChild(paymentEaseStyle);
 const $ = (id) => document.getElementById(id);
 const steps = ['espaco', 'agenda', 'dados', 'contrato', 'pagamento'];
 const state = { space: null, date: new Date(), day: null, rate: null, slot: null, booking: null };
+let availabilityRequest = 0;
 const monthlyContractStep = document.createElement('section');
 monthlyContractStep.className = 'step';
 monthlyContractStep.dataset.step = 'contrato';
@@ -69,6 +73,8 @@ function go(step) {
   history.pushState({}, '', `?etapa=${step}`);
   document.querySelectorAll('.step').forEach((el) => el.classList.toggle('active', el.dataset.step === step));
   document.querySelectorAll('.progress i').forEach((el, i) => el.classList.toggle('active', i <= index));
+  const visibleStage = step === 'contrato' ? 'pagamento' : step;
+  document.querySelectorAll('.flow-nav [data-stage]').forEach((el) => el.classList.toggle('active', el.dataset.stage === visibleStage));
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -235,14 +241,7 @@ function renderRates() {
       state.slot = null;
       monthlyFields();
       renderRates();
-      if (state.rate.booking_unit === 'hour') {
-        renderSlots();
-      } else {
-        state.slot = createSlots(state.rate)[0];
-        $('times').innerHTML = '';
-        $('time-help').textContent = `Período selecionado: ${state.slot.label}.`;
-        renderSummary();
-      }
+      renderSlots();
     };
   });
   if (state.rate?.booking_unit === 'hour') renderSlots();
@@ -279,24 +278,43 @@ function createSlots(rate) {
   return hours.map((hour) => ({ key: String(hour), label: `${String(hour).padStart(2, '0')}:00`, start: at(state.day, `${String(hour).padStart(2, '0')}:00`), end: at(state.day, `${String(hour + 1).padStart(2, '0')}:00`) }));
 }
 
-function ensureFixedSlot() {
-  if (state.day && state.rate && state.rate.booking_unit !== 'hour' && !state.slot) {
-    state.slot = createSlots(state.rate)[0];
-  }
-}
-
 async function renderSlots() {
   if (!state.rate || !state.day) return;
+  const request = ++availabilityRequest;
+  const rateId = state.rate.id;
+  const spaceId = state.space.id;
+  const selectedDay = iso(state.day);
   const slots = createSlots(state.rate);
   const range = slots.reduce((acc, slot) => ({ start: acc.start < slot.start ? acc.start : slot.start, end: acc.end > slot.end ? acc.end : slot.end }));
-  const { data, error } = await sb.rpc('get_occupied_slots', { p_space_id: state.space.id, p_from: range.start.toISOString(), p_to: range.end.toISOString() });
+  const { data, error } = await sb.rpc('get_occupied_slots', { p_space_id: spaceId, p_from: range.start.toISOString(), p_to: range.end.toISOString() });
+  if (request !== availabilityRequest || state.rate?.id !== rateId || state.space?.id !== spaceId || !state.day || iso(state.day) !== selectedDay) return;
   if (error) {
     $('time-help').textContent = 'Não foi possível consultar a agenda.';
     return;
   }
-  $('time-help').textContent = state.rate.booking_unit === 'event' ? 'O Rooftop é reservado pelo período completo.' : 'Escolha um horário disponível.';
+  const occupied = Array.isArray(data) ? data : [];
+  const overlaps = (slot) => occupied.some((booking) => {
+    const start = new Date(booking.start_at).getTime();
+    const end = new Date(booking.end_at).getTime();
+    return Number.isFinite(start) && Number.isFinite(end) && start < slot.end.getTime() && end > slot.start.getTime();
+  });
+  if (state.rate.booking_unit !== 'hour') {
+    const selected = slots[0];
+    if (overlaps(selected)) {
+      state.slot = null;
+      $('times').innerHTML = '';
+      $('time-help').textContent = state.rate.booking_unit === 'month' ? 'Este período mensal já está reservado.' : 'Este período já está reservado.';
+      return;
+    }
+    state.slot = selected;
+    $('times').innerHTML = '';
+    $('time-help').textContent = `Período selecionado: ${selected.label}.`;
+    renderSummary();
+    return;
+  }
+  $('time-help').textContent = 'Escolha um horário disponível.';
   $('times').innerHTML = slots.map((slot) => {
-    const busy = data.some((booking) => new Date(booking.start_at) < slot.end && new Date(booking.end_at) > slot.start);
+    const busy = overlaps(slot);
     return `<button class="time ${state.slot?.key === slot.key ? 'active' : ''}" data-slot="${slot.key}" ${busy ? 'disabled' : ''}>${slot.label}</button>`;
   }).join('');
   document.querySelectorAll('[data-slot]').forEach((button) => {
@@ -312,7 +330,6 @@ document.querySelectorAll('[data-next]').forEach((button) => {
   button.onclick = () => {
     const next = button.dataset.next;
     if (next === 'agenda' && !state.space) return notice('Escolha um espaço para continuar.');
-    if (next === 'dados') ensureFixedSlot();
     if (next === 'dados' && (!state.day || !state.rate || !state.slot)) return notice('Escolha data, modalidade e horário para continuar.');
     renderSummary();
     go(next);

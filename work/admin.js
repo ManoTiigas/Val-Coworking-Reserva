@@ -4,11 +4,23 @@ const $=id=>document.getElementById(id);
 let bookings=[];
 let canManageContracts=false;
 let trashMode=false;
+let activeView='home';
 const labels={pending_payment:'Em processo',paid:'Pago',cancelled:'Cancelado',expired:'Expirado',failed:'Falhou'};
 const dateFmt=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'});
+const viewCopy={home:['Visão <em>geral</em>','Controle de reservas e recebimentos.'],reservations:['Todas as <em>reservas</em>','Acompanhe cada solicitação em um só lugar.'],pending_payment:['Em <em>processo</em>','Reservas aguardando pagamento.'],paid:['Pagamentos <em>confirmados</em>','Reservas pagas e confirmadas.'],cancelled:['Reservas <em>canceladas</em>','Histórico de cancelamentos manuais e automáticos.'],trash:['<em>Lixeira</em>','Exclusão definitiva de reservas canceladas.'],contract:['Contrato <em>digital</em>','Gerencie o modelo privado usado nos planos.']};
 
 function setMessage(id,text=''){ $(id).textContent=text; }
 function showDashboard(show){$('login-view').hidden=show;$('dashboard-view').hidden=!show;}
+function syncContractPanel(){ $('contract-upload').hidden=!(activeView==='contract'&&canManageContracts); }
+function setAdminView(view){
+  activeView=view;trashMode=view==='trash';
+  const forcedStatus=['pending_payment','paid','cancelled'].includes(view)?view:'all';
+  $('status-filter').value=forcedStatus;$('date-filter').value='';
+  const [title,subtitle]=viewCopy[view]||viewCopy.home;
+  $('dashboard-title').innerHTML=title;$('dashboard-subtitle').textContent=subtitle;
+  document.querySelectorAll('[data-admin-view]').forEach(button=>button.classList.toggle('active',button.dataset.adminView===view));
+  syncContractPanel();render();
+}
 function row(b){
   const when=`${dateFmt.format(new Date(b.start_at))} — ${new Intl.DateTimeFormat('pt-BR',{timeStyle:'short'}).format(new Date(b.end_at))}`;
   const canCancel=['pending_payment','paid'].includes(b.status);
@@ -17,7 +29,8 @@ function row(b){
 }
 function render(){
   const status=$('status-filter').value,date=$('date-filter').value;
-  const items=bookings.filter(b=>(trashMode?b.status==='cancelled':status==='all'||b.status===status)&&(!date||b.start_at.startsWith(date)));
+  const forcedStatus=['pending_payment','paid','cancelled'].includes(activeView)?activeView:null;
+  const items=bookings.filter(b=>(trashMode?b.status==='cancelled':(forcedStatus?b.status===forcedStatus:status==='all'||b.status===status))&&(!date||b.start_at.startsWith(date)));
   $('bookings-list').innerHTML=items.length?items.map(row).join(''):`<tr><td class="empty" colspan="6">Nenhuma reserva encontrada.</td></tr>`;
   $('stat-pending').textContent=bookings.filter(b=>b.status==='pending_payment').length;
   $('stat-paid').textContent=bookings.filter(b=>b.status==='paid').length;
@@ -53,7 +66,7 @@ async function load(){
 async function loadContractAccess(){
   const {data,error}=await sb.rpc('is_admin');
   canManageContracts=!error&&data===true;
-  $('contract-upload').hidden=!canManageContracts;
+  syncContractPanel();
   if(canManageContracts) await loadContractStatus();
 }
 async function loadContractStatus(){
@@ -89,9 +102,10 @@ $('login-form').onsubmit=async e=>{
 };
 $('sign-out').onclick=async()=>{await sb.auth.signOut();showDashboard(false);};
 $('refresh').onclick=()=>{load();loadContractAccess();};
+document.querySelectorAll('[data-admin-view]').forEach(button=>button.onclick=()=>setAdminView(button.dataset.adminView));
 $('status-filter').onchange=render;
 $('date-filter').onchange=render;
-$('trash-toggle').onclick=()=>{trashMode=!trashMode;$('status-filter').value='all';$('date-filter').value='';render();};
+$('trash-toggle').onclick=()=>setAdminView(activeView==='trash'?'reservations':'trash');
 $('contract-file').onchange=event=>{$('contract-file-name').textContent=event.target.files?.[0]?.name||'Nenhum arquivo selecionado';};
 $('contract-upload-form').onsubmit=async event=>{
   event.preventDefault();
