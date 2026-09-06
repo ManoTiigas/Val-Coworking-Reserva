@@ -69,6 +69,7 @@ function notice(message) {
 
 function go(step) {
   notice('');
+  document.body.classList.toggle('space-selected', step === 'espaco' && Boolean(state.space));
   const index = steps.indexOf(step);
   history.pushState({}, '', `?etapa=${step}`);
   document.querySelectorAll('.step').forEach((el) => el.classList.toggle('active', el.dataset.step === step));
@@ -185,6 +186,7 @@ async function loadSpaces() {
       state.day = null;
       state.rate = null;
       state.slot = null;
+      document.body.classList.add('space-selected');
       document.querySelectorAll('[data-space]').forEach((el) => el.classList.toggle('active', el === button));
       calendar();
     };
