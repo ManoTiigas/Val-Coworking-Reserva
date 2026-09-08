@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 const sb = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  import.meta.env.VITE_SUPABASE_URL || 'https://htsnhqyhhlzqjgqlgkvt.supabase.co',
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_l1jEP6P84wREppUZwEHwSw_RRw8Ht5y',
 );
 const $ = (id) => document.getElementById(id);
 const labels = {
