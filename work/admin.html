@@ -3,119 +3,55 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="theme-color" content="#002b27"/>
   <title>Val Coworking | Administração</title>
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css"/>
   <link rel="stylesheet" href="/admin.css"/>
-  <style>
-    .contract-panel{margin-bottom:22px}.private-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:#d5f2df;color:#176536;font-size:11px;font-weight:800}.contract-copy{max-width:680px;margin:14px 0;color:#6a6870;font-size:14px;line-height:1.5}.contract-status{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:16px 0;padding:14px 16px;border-radius:12px;background:#f6f5f1;border:1px solid #e2dfd7}.contract-status strong,.contract-status small{display:block}.contract-status small{margin-top:3px;color:#6a6870}.contract-status .button{white-space:nowrap}.contract-upload-form{grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px}.contract-upload-form .message{grid-column:1/-1}.contract-upload-form input[type=file]{background:#fff;padding:10px}.cancel-booking{color:#a90000;border-color:#a90000;background:#fff7f7}.trash-panel{margin-top:22px}.trash-copy{color:#6a6870;font-size:14px}.delete-booking{color:#a90000;border-color:#a90000;background:#fff7f7}@media(max-width:760px){.contract-status,.contract-upload-form{grid-template-columns:1fr;display:grid}.contract-status .button,.contract-upload-form .button{width:100%}}
-  </style>
-  <style>
-    .contract-copy,.trash-copy{color:#ccdad6}.contract-status{background:#003a33;border-color:rgba(221,169,67,.3)}.contract-status small{color:#b5c9c3}.contract-upload-form input[type=file]{background:#003a33}.cancel-booking,.delete-booking{color:#ffe3e5;border-color:#e78a91;background:#4a2023}.private-badge{background:#d5f2df;color:#176536}.login-card h1{color:#f8f4ea}.login-card h1 em,.headline h1 em{color:#dda943}.brand:before{display:none}.brand{display:block}.brand-logo{display:block;width:116px;height:48px;object-fit:contain;object-position:left center}.login-card .brand{margin-bottom:36px}.file-picker{position:relative;display:grid;gap:7px;cursor:pointer}.file-picker input{position:absolute;width:1px;height:1px;opacity:0}.file-picker-ui{display:flex;align-items:center;gap:10px;min-height:46px;padding:7px;border:1px dashed rgba(221,169,67,.55);border-radius:10px;background:#003a33}.file-picker-button{display:inline-flex;align-items:center;gap:7px;padding:9px 11px;border-radius:7px;background:#dda943;color:#001d1a;font-size:11px;font-weight:800;white-space:nowrap}.file-picker-name{overflow:hidden;color:#c9d8d3;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
-  </style>
-<style>*{font-family:'DM Sans',Arial,sans-serif!important}.dashboard{display:grid;grid-template-columns:230px minmax(0,1fr);gap:26px}.admin-header{grid-row:1 / span 4;align-self:start;position:sticky;top:22px;min-height:calc(100vh - 84px);padding:22px;border:1px solid rgba(221,169,67,.3);border-radius:20px;background:rgba(0,29,26,.7);flex-direction:column;align-items:flex-start}.admin-header .brand{margin-bottom:4px}.admin-header .button{margin-top:auto;width:100%}.headline,.stats,.panel{grid-column:2}.headline{margin:0}.headline h1{font-size:clamp(38px,5vw,54px)}.stats{margin:0}.panel{margin-top:0}@media(max-width:800px){.dashboard{display:block}.admin-header{position:static;min-height:0;margin-bottom:24px;flex-direction:row;align-items:center}.admin-header .button{width:auto;margin-top:0}.headline,.stats,.panel{margin-bottom:18px}}</style>
-<style>em{font-style:normal!important}</style>
 </head>
 <body>
-  <style>
-    .admin-nav{display:grid;gap:5px;width:100%;margin-top:30px}
-    .admin-nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 11px;border:0;border-radius:10px;background:transparent;color:#9bb9b0;font:inherit;font-size:12px;font-weight:700;text-align:left;cursor:pointer;transition:.16s}
-    .admin-nav-item i{font-size:17px}.admin-nav-item:hover{background:rgba(255,255,255,.06);color:#fff}.admin-nav-item.active{background:#075047;color:#fff;box-shadow:inset 3px 0 #dda943}.admin-nav-item.active i{color:#e6b657}
-    @media(max-width:800px){.admin-nav{display:flex;order:3;overflow:auto;margin:8px 0 0;padding-bottom:2px}.admin-nav-item{width:auto;flex:0 0 auto}.admin-nav-item span{white-space:nowrap}}
-  </style>
   <main class="admin-shell">
-    <section id="login-view" class="login-card">
-      <div class="brand"><img class="brand-logo" src="/images/val-coworking-logo.png" alt="Val Coworking"/></div>
+    <section id="login-view" class="login-card" aria-labelledby="login-title">
+      <img class="brand-logo" src="/images/val-coworking-logo.png" alt="Val Coworking"/>
       <p class="eyebrow">ÁREA RESTRITA</p>
-      <h1>Painel<br/><em>Administrativo</em></h1>
-      <p class="copy">Entre para visualizar reservas e pagamentos.</p>
+      <h1 id="login-title">Painel <em>Administrativo</em></h1>
+      <p class="copy">Entre para acompanhar as reservas e os pagamentos.</p>
       <form id="login-form">
         <label>E-mail<input name="email" type="email" autocomplete="email" required placeholder="voce@empresa.com"/></label>
         <label>Senha<input name="password" type="password" autocomplete="current-password" required placeholder="Sua senha"/></label>
         <p id="login-message" class="message" role="status"></p>
-        <button class="button primary" type="submit">Entrar <i class="ph ph-sign-in"></i></button>
+        <button type="submit">Entrar</button>
       </form>
     </section>
 
-    <section id="dashboard-view" class="dashboard" hidden>
-      <header class="admin-header">
+    <section id="dashboard-view" class="dashboard" hidden aria-labelledby="dashboard-title">
+      <header class="dashboard-heading">
+        <img class="brand-logo" src="/images/val-coworking-logo.png" alt="Val Coworking"/>
         <div>
-          <div class="brand"><img class="brand-logo" src="/images/val-coworking-logo.png" alt="Val Coworking"/></div>
           <p class="eyebrow">PAINEL ADMINISTRATIVO</p>
+          <h1 id="dashboard-title">Reservas e pagamentos</h1>
+          <p>Veja todas as solicitações em um único lugar.</p>
         </div>
-        <nav class="admin-nav" aria-label="Seções administrativas">
-          <button class="admin-nav-item active" type="button" data-admin-view="home"><i class="ph ph-squares-four"></i><span>Visão geral</span></button>
-          <button class="admin-nav-item" type="button" data-admin-view="reservations"><i class="ph ph-calendar-blank"></i><span>Reservas</span></button>
-          <button class="admin-nav-item" type="button" data-admin-view="pending_payment"><i class="ph ph-hourglass"></i><span>Em processo</span></button>
-          <button class="admin-nav-item" type="button" data-admin-view="paid"><i class="ph ph-check-circle"></i><span>Pagamentos</span></button>
-          <button class="admin-nav-item" type="button" data-admin-view="cancelled"><i class="ph ph-x-circle"></i><span>Cancelamentos</span></button>
-          <button class="admin-nav-item" type="button" data-admin-view="trash"><i class="ph ph-trash"></i><span>Lixeira</span></button>
-          <button class="admin-nav-item" type="button" data-admin-view="contract"><i class="ph ph-file-doc"></i><span>Contrato</span></button>
-        </nav>
-        <button id="sign-out" class="button secondary">Sair <i class="ph ph-sign-out"></i></button>
       </header>
 
-      <section class="headline">
-        <div>
-          <h1 id="dashboard-title">Visão <em>geral</em></h1>
-          <p id="dashboard-subtitle">Controle de reservas e recebimentos.</p>
-        </div>
-        <button id="refresh" class="button icon-text"><i class="ph ph-arrow-clockwise"></i> Atualizar</button>
-      </section>
-
       <section class="stats" aria-label="Resumo de reservas">
-        <article><span>Em processo</span><strong id="stat-pending">0</strong><i class="ph ph-hourglass"></i></article>
-        <article><span>Pagas</span><strong id="stat-paid">0</strong><i class="ph ph-check-circle"></i></article>
-        <article><span>Canceladas</span><strong id="stat-cancelled">0</strong><i class="ph ph-x-circle"></i></article>
-        <article><span>Total</span><strong id="stat-total">0</strong><i class="ph ph-calendar-blank"></i></article>
+        <article><span>Em processo</span><strong id="stat-pending">0</strong></article>
+        <article><span>Pagas</span><strong id="stat-paid">0</strong></article>
+        <article><span>Canceladas</span><strong id="stat-cancelled">0</strong></article>
+        <article><span>Total</span><strong id="stat-total">0</strong></article>
       </section>
 
-      <section id="contract-upload" class="panel contract-panel" hidden>
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">CONTRATO DIGITAL</p>
-            <h2>Contrato usado nos planos</h2>
-          </div>
-          <span class="private-badge"><i class="ph ph-lock-key"></i> Privado</span>
-        </div>
-        <p class="contract-copy">Envie o DOCX padrão. Ele fica protegido no Supabase e é usado apenas para gerar contratos na Clicksign.</p>
-        <div id="contract-status" class="contract-status" aria-live="polite">
-          <div><strong>Verificando contrato…</strong><small>Somente administradores podem acessá-lo.</small></div>
-        </div>
-        <form id="contract-upload-form" class="contract-upload-form">
-          <label class="file-picker"><span>Arquivo DOCX</span><input id="contract-file" name="contract" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required/><span class="file-picker-ui"><span class="file-picker-button"><i class="ph ph-file-arrow-up"></i> Escolher DOCX</span><span id="contract-file-name" class="file-picker-name">Nenhum arquivo selecionado</span></span></label>
-          <button class="button primary" type="submit"><i class="ph ph-upload-simple"></i> Salvar contrato privado</button>
-          <p id="contract-upload-message" class="message" role="status"></p>
-        </form>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">RESERVAS</p>
-            <h2>Agenda e pagamentos</h2>
-          </div>
-          <div class="filters">
-            <select id="status-filter" aria-label="Filtrar por status">
-              <option value="all">Todos os status</option>
-              <option value="pending_payment">Em processo</option>
-              <option value="paid">Pago</option>
-              <option value="cancelled">Cancelado</option>
-              <option value="expired">Expirado</option>
-              <option value="failed">Falhou</option>
-            </select>
-            <input id="date-filter" type="date" aria-label="Filtrar por data"/>
-            <button id="trash-toggle" class="button ghost" type="button"><i class="ph ph-trash"></i> Lixeira</button>
-          </div>
+      <section class="panel" aria-labelledby="reservations-title">
+        <div class="panel-heading">
+          <p class="eyebrow">AGENDA</p>
+          <h2 id="reservations-title">Reservas recentes</h2>
         </div>
         <p id="dashboard-message" class="message" role="status"></p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Reserva</th><th>Cliente</th><th>Espaço</th><th>Data e horário</th><th>Status</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Reserva</th><th>Cliente</th><th>Espaço</th><th>Data e horário</th><th>Status</th></tr></thead>
             <tbody id="bookings-list"></tbody>
           </table>
         </div>
       </section>
-
     </section>
   </main>
   <script type="module" src="/admin.js"></script>

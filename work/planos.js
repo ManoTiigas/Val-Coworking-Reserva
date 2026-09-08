@@ -1,7 +1,7 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { createClient } from '@supabase/supabase-js';
 
-const sb=createClient('https://htsnhqyhhlzqjgqlgkvt.supabase.co','sb_publishable_l1jEP6P84wREppUZwEHwSw_RRw8Ht5y');
-const mercadoPagoPublicKey='APP_USR-02015adc-df8b-4c73-ae52-80796f6e4284';
+const sb=createClient(import.meta.env.VITE_SUPABASE_URL,import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+const mercadoPagoPublicKey=import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY;
 const plans={fiscal_monthly:{name:'Endereço Fiscal',price:'R$ 78,00',period:'Mensal'},fiscal_annual:{name:'Endereço Fiscal',price:'R$ 698,00',period:'Anual à vista'},fiscal_biennial:{name:'Endereço Fiscal',price:'R$ 912,00',period:'Bianual à vista'},premium_monthly:{name:'Plano Premium',price:'R$ 198,00',period:'Mensal'},premium_annual:{name:'Plano Premium',price:'R$ 1.699,00',period:'Anual à vista'},premium_biennial:{name:'Plano Premium',price:'R$ 2.199,00',period:'Bianual à vista'}};
 const $=id=>document.getElementById(id);const state={plan:null,application:null,widget:null};
 const planDataStyle=document.createElement('style');

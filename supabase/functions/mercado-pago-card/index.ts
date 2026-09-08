@@ -1,0 +1,13 @@
+import { createClient } from "jsr:@supabase/supabase-js@2";
+const h={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
+const out=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:h});
+Deno.serve(async(req)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:h});if(req.method!=="POST")return out({error:"Método não permitido"},405);
+const access=Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN"),url=Deno.env.get("SUPABASE_URL"),key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");if(!access||!url||!key)return out({error:"Pagamento não configurado"},503);
+const{booking_id,payment_token,card_token,payment_method_id,payment_type,installments}=await req.json().catch(()=>({}));if(![booking_id,payment_token,card_token,payment_method_id,payment_type].every(x=>typeof x==="string"))return out({error:"Dados do cartão inválidos"},400);
+if(!["credit_card","debit_card"].includes(payment_type))return out({error:"Tipo de cartão inválido"},400);
+const sb=createClient(url,key);const{data:b}=await sb.from("bookings").select("id,booking_code,customer_email,amount_cents,status,hold_expires_at,payment_reference").eq("id",booking_id).eq("payment_token",payment_token).maybeSingle();
+if(!b)return out({error:"Reserva não encontrada"},404);if(b.status!=="pending_payment"||new Date(b.hold_expires_at)<=new Date())return out({error:"Esta reserva expirou"},409);if(b.payment_reference)return out({error:"Esta reserva já possui um pagamento em processamento"},409);
+const amount=(b.amount_cents/100).toFixed(2);const r=await fetch("https://api.mercadopago.com/v1/orders",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json",Authorization:`Bearer ${access}`,"X-Idempotency-Key":crypto.randomUUID()},body:JSON.stringify({type:"online",processing_mode:"automatic",total_amount:amount,external_reference:b.booking_code,payer:{email:b.customer_email},transactions:{payments:[{amount,payment_method:{id:payment_method_id,type:payment_type,token:card_token,installments:Number(installments)||1}}]}})});
+const order=await r.json();if(!r.ok)return out({error:order.message||order.cause?.[0]?.description||"Cartão não aprovado"},422);
+await sb.from("bookings").update({payment_provider:"mercado_pago",payment_reference:order.id}).eq("id",b.id).eq("payment_token",payment_token);
+return out({order_id:order.id,status:order.status,status_detail:order.status_detail});});

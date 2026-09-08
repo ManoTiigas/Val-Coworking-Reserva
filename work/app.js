@@ -1,7 +1,7 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { createClient } from '@supabase/supabase-js';
 
-const sb = createClient('https://htsnhqyhhlzqjgqlgkvt.supabase.co', 'sb_publishable_l1jEP6P84wREppUZwEHwSw_RRw8Ht5y');
-const mercadoPagoPublicKey = 'APP_USR-02015adc-df8b-4c73-ae52-80796f6e4284';
+const sb = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+const mercadoPagoPublicKey = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY;
 const reservationFont = document.createElement('link');
 reservationFont.rel = 'stylesheet';
 reservationFont.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,600&display=swap';

@@ -1,5 +1,6 @@
 {
-  "outputDirectory": "work",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/planos", "destination": "/planos.html" },
     { "source": "/admin", "destination": "/admin.html" },
