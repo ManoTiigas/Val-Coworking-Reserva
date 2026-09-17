@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { bookingTotalCents, consecutiveDays, isRateAvailableForDays, occurrenceRanges } from './booking-range.js';
 
 const sb = createClient(import.meta.env.VITE_SUPABASE_URL || 'https://htsnhqyhhlzqjgqlgkvt.supabase.co', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_l1jEP6P84wREppUZwEHwSw_RRw8Ht5y');
 const mercadoPagoPublicKey = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || 'APP_USR-02015adc-df8b-4c73-ae52-80796f6e4284';
@@ -20,7 +21,7 @@ paymentEaseStyle.textContent = `#payment-summary{display:grid!important;gap:13px
 document.head.appendChild(paymentEaseStyle);
 const $ = (id) => document.getElementById(id);
 const steps = ['espaco', 'agenda', 'dados', 'contrato', 'pagamento'];
-const state = { space: null, date: new Date(), day: null, rate: null, slot: null, booking: null };
+const state = { space: null, date: new Date(), day: null, days: [], rate: null, slot: null, booking: null };
 let availabilityRequest = 0;
 const monthlyContractStep = document.createElement('section');
 monthlyContractStep.className = 'step';
@@ -83,9 +84,32 @@ function slotRange(slot) {
   return { start: slot.start, end: slot.end };
 }
 
+function selectedDays() {
+  return state.days.length ? state.days : (state.day ? [state.day] : []);
+}
+
+function selectedDaysLabel() {
+  const days = selectedDays();
+  if (days.length === 1) return dayName(days[0]);
+  return `${days[0].toLocaleDateString('pt-BR')} a ${days.at(-1).toLocaleDateString('pt-BR')} · ${days.length} dias`;
+}
+
+function selectedSlotRanges(slot = state.slot) {
+  const days = selectedDays();
+  if (!slot || !state.rate || !days.length) return [];
+  if (state.rate.booking_unit === 'hour') {
+    return occurrenceRanges(days, {
+      startTime: slot.start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      endTime: slot.end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })
+    });
+  }
+  if (state.rate.booking_unit === 'day' && days.length > 1) return days.map((day) => slotRange(createSlots(state.rate, day)[0]));
+  return [slotRange(slot)];
+}
+
 function renderSummary() {
   if (!state.space || !state.day || !state.rate || !state.slot) return;
-  $('selection-summary').innerHTML = `<b>${state.space.name}</b><br>${dayName(state.day)}<br>${state.slot.label}<br><strong>${money(state.rate.price_cents)}</strong>`;
+  $('selection-summary').innerHTML = `<b>${state.space.name}</b><br>${selectedDaysLabel()}<br>${state.slot.label}<br><strong>${money(bookingTotalCents(state.rate, selectedDays().length))}</strong>`;
 }
 
 function renderPayment() {
@@ -184,6 +208,7 @@ async function loadSpaces() {
     button.onclick = () => {
       state.space = data.find((space) => space.id === button.dataset.space);
       state.day = null;
+      state.days = [];
       state.rate = null;
       state.slot = null;
       document.body.classList.add('space-selected');
@@ -202,12 +227,19 @@ function calendar() {
   $('calendar').innerHTML = Array(first.getDay()).fill('<i></i>').join('') + Array.from({ length: days }, (_, index) => {
     const date = new Date(state.date.getFullYear(), state.date.getMonth(), index + 1);
     const closed = date < today || (date.getDay() === 0 && state.space?.code !== 'rooftop');
-    const chosen = state.day && iso(date) === iso(state.day);
+    const chosen = selectedDays().some((selectedDay) => iso(date) === iso(selectedDay));
     return `<button class="day ${chosen ? 'active' : ''}" data-day="${iso(date)}" ${closed ? 'disabled' : ''}>${date.getDate()}</button>`;
   }).join('');
   document.querySelectorAll('[data-day]').forEach((button) => {
     button.onclick = () => {
-      state.day = new Date(`${button.dataset.day}T12:00:00`);
+      const pickedDay = new Date(`${button.dataset.day}T12:00:00`);
+      if (!state.day || state.days.length > 1) {
+        state.day = pickedDay;
+        state.days = [pickedDay];
+      } else {
+        state.days = consecutiveDays(state.day, pickedDay);
+        state.day = state.days[0];
+      }
       state.rate = null;
       state.slot = null;
       calendar();
@@ -218,8 +250,8 @@ function calendar() {
 
 function availableRates() {
   if (!state.space || !state.day) return [];
-  const day = state.day.getDay();
-  return (state.space.space_rates || []).filter((rate) => !rate.days_of_week || rate.days_of_week.includes(day));
+  const days = selectedDays();
+  return (state.space.space_rates || []).filter((rate) => isRateAvailableForDays(rate, days) && (!rate.days_of_week || days.every((day) => rate.days_of_week.includes(day.getDay()))));
 }
 
 function renderRates() {
@@ -234,7 +266,7 @@ function renderRates() {
     $('rate-help').textContent = 'Não há modalidade disponível para esta data.';
     return;
   }
-  $('rate-help').textContent = 'Escolha a modalidade.';
+  $('rate-help').textContent = selectedDays().length > 1 ? 'Para várias datas, escolha Diária ou Por hora.' : 'Escolha a modalidade.';
   $('rates').className = 'rate-grid';
   $('rates').innerHTML = rates.map((rate) => `<button class="rate-option ${state.rate?.id === rate.id ? 'active' : ''}" data-rate="${rate.id}"><b>${rate.label}</b><strong>${money(rate.price_cents)}</strong><small>${rate.booking_unit === 'hour' ? 'Escolha o horário depois' : 'Horário fixo conforme a modalidade'}</small></button>`).join('');
   document.querySelectorAll('[data-rate]').forEach((button) => {
@@ -249,35 +281,35 @@ function renderRates() {
   if (state.rate?.booking_unit === 'hour') renderSlots();
 }
 
-function createSlots(rate) {
-  const day = state.day.getDay();
+function createSlots(rate, selectedDay = state.day) {
+  const day = selectedDay.getDay();
   if (rate.booking_unit === 'event') {
-    const start = at(state.day, rate.start_time.slice(0, 5));
-    const end = at(new Date(state.day.getTime() + 86400000), '00:00');
+    const start = at(selectedDay, rate.start_time.slice(0, 5));
+    const end = at(new Date(selectedDay.getTime() + 86400000), '00:00');
     return [{ key: 'evento', label: `${rate.start_time.slice(0, 5)} às 00:00`, start, end }];
   }
   if (rate.booking_unit === 'day') {
     // Daily rates occupy every bookable hour for that date. Older rates may not
     // have times stored, so keep the same hours enforced by create_booking_hold.
     const startTime = typeof rate.start_time === 'string' ? rate.start_time.slice(0, 5) : '08:00';
-    const defaultEndTime = state.day.getDay() === 6 ? '13:00' : '18:00';
+    const defaultEndTime = selectedDay.getDay() === 6 ? '13:00' : '18:00';
     const endTime = typeof rate.end_time === 'string' ? rate.end_time.slice(0, 5) : defaultEndTime;
     const endsNextDay = endTime === '00:00';
     return [{
       key: 'diaria',
       label: `Diária · ${startTime} às ${endTime}`,
-      start: at(state.day, startTime),
-      end: at(endsNextDay ? new Date(state.day.getTime() + 86400000) : state.day, endTime)
+      start: at(selectedDay, startTime),
+      end: at(endsNextDay ? new Date(selectedDay.getTime() + 86400000) : selectedDay, endTime)
     }];
   }
   if (rate.booking_unit === 'month') {
-    const start = at(state.day, '08:00');
-    const lastDayNextMonth = new Date(state.day.getFullYear(), state.day.getMonth() + 2, 0).getDate();
-    const nextMonth = new Date(state.day.getFullYear(), state.day.getMonth() + 1, Math.min(state.day.getDate(), lastDayNextMonth));
+    const start = at(selectedDay, '08:00');
+    const lastDayNextMonth = new Date(selectedDay.getFullYear(), selectedDay.getMonth() + 2, 0).getDate();
+    const nextMonth = new Date(selectedDay.getFullYear(), selectedDay.getMonth() + 1, Math.min(selectedDay.getDate(), lastDayNextMonth));
     return [{ key: 'mensal', label: 'Mensal · 1 mês a partir das 08:00', start, end: at(nextMonth, '08:00') }];
   }
   const hours = day === 6 ? [8, 9, 10, 11, 12] : [8, 9, 10, 11, 13, 14, 15, 16, 17];
-  return hours.map((hour) => ({ key: String(hour), label: `${String(hour).padStart(2, '0')}:00`, start: at(state.day, `${String(hour).padStart(2, '0')}:00`), end: at(state.day, `${String(hour + 1).padStart(2, '0')}:00`) }));
+  return hours.map((hour) => ({ key: String(hour), label: `${String(hour).padStart(2, '0')}:00`, start: at(selectedDay, `${String(hour).padStart(2, '0')}:00`), end: at(selectedDay, `${String(hour + 1).padStart(2, '0')}:00`) }));
 }
 
 async function renderSlots() {
@@ -285,36 +317,37 @@ async function renderSlots() {
   const request = ++availabilityRequest;
   const rateId = state.rate.id;
   const spaceId = state.space.id;
-  const selectedDay = iso(state.day);
+  const selectedDay = selectedDays().map(iso).join(',');
   const slots = createSlots(state.rate);
-  const range = slots.reduce((acc, slot) => ({ start: acc.start < slot.start ? acc.start : slot.start, end: acc.end > slot.end ? acc.end : slot.end }));
+  const allRanges = slots.flatMap((slot) => selectedSlotRanges(slot));
+  const range = allRanges.reduce((acc, slot) => ({ start: acc.start < slot.start ? acc.start : slot.start, end: acc.end > slot.end ? acc.end : slot.end }));
   const { data, error } = await sb.rpc('get_occupied_slots', { p_space_id: spaceId, p_from: range.start.toISOString(), p_to: range.end.toISOString() });
-  if (request !== availabilityRequest || state.rate?.id !== rateId || state.space?.id !== spaceId || !state.day || iso(state.day) !== selectedDay) return;
+  if (request !== availabilityRequest || state.rate?.id !== rateId || state.space?.id !== spaceId || !state.day || selectedDays().map(iso).join(',') !== selectedDay) return;
   if (error) {
     $('time-help').textContent = 'Não foi possível consultar a agenda.';
     return;
   }
   const occupied = Array.isArray(data) ? data : [];
-  const overlaps = (slot) => occupied.some((booking) => {
+  const overlaps = (slot) => selectedSlotRanges(slot).some((candidate) => occupied.some((booking) => {
     const start = new Date(booking.start_at).getTime();
     const end = new Date(booking.end_at).getTime();
-    return Number.isFinite(start) && Number.isFinite(end) && start < slot.end.getTime() && end > slot.start.getTime();
-  });
+    return Number.isFinite(start) && Number.isFinite(end) && start < candidate.end.getTime() && end > candidate.start.getTime();
+  }));
   if (state.rate.booking_unit !== 'hour') {
     const selected = slots[0];
     if (overlaps(selected)) {
       state.slot = null;
       $('times').innerHTML = '';
-      $('time-help').textContent = state.rate.booking_unit === 'month' ? 'Este período mensal já está reservado.' : 'Este período já está reservado.';
+      $('time-help').textContent = selectedDays().length > 1 ? 'Uma ou mais datas do período já estão reservadas.' : state.rate.booking_unit === 'month' ? 'Este período mensal já está reservado.' : 'Este período já está reservado.';
       return;
     }
     state.slot = selected;
     $('times').innerHTML = '';
-    $('time-help').textContent = `Período selecionado: ${selected.label}.`;
+    $('time-help').textContent = `Período selecionado: ${selected.label}${selectedDays().length > 1 ? ` em ${selectedDays().length} dias` : ''}.`;
     renderSummary();
     return;
   }
-  $('time-help').textContent = 'Escolha um horário disponível.';
+  $('time-help').textContent = selectedDays().length > 1 ? 'Escolha um horário disponível em todas as datas.' : 'Escolha um horário disponível.';
   $('times').innerHTML = slots.map((slot) => {
     const busy = overlaps(slot);
     return `<button class="time ${state.slot?.key === slot.key ? 'active' : ''}" data-slot="${slot.key}" ${busy ? 'disabled' : ''}>${slot.label}</button>`;
@@ -347,25 +380,26 @@ $('booking-form').onsubmit = async (event) => {
   const button = event.submitter;
   button.disabled = true;
   $('form-status').textContent = 'Retendo sua reserva…';
-  const { start, end } = slotRange(state.slot);
-  const { data, error } = await sb.rpc('create_booking_hold', {
+  const ranges = selectedSlotRanges();
+  const payload = {
     p_space_id: state.space.id,
     p_rate_id: state.rate.id,
-    p_start_at: start.toISOString(),
-    p_end_at: end.toISOString(),
     p_customer_name: form.get('name'),
     p_customer_email: form.get('email'),
     p_customer_phone: form.get('phone'),
     p_customer_document: form.get('document'),
     p_customer_address: form.get('address'),
     p_company_name: form.get('company')
-  });
+  };
+  const { data, error } = ranges.length > 1
+    ? await sb.rpc('create_multi_day_booking_hold', { ...payload, p_occurrences: ranges.map(({ start, end }) => ({ start_at: start.toISOString(), end_at: end.toISOString() })) })
+    : await sb.rpc('create_booking_hold', { ...payload, p_start_at: ranges[0].start.toISOString(), p_end_at: ranges[0].end.toISOString() });
   button.disabled = false;
   if (error) {
     $('form-status').textContent = error.message;
     return;
   }
-  const booking = { ...data[0], space_name: state.space.name, slot_label: state.slot.label };
+  const booking = { ...data[0], space_name: state.space.name, slot_label: `${state.slot.label}${selectedDays().length > 1 ? ` · ${selectedDaysLabel()}` : ''}` };
   state.booking = booking;
   sessionStorage.setItem('val-coworking-payment', JSON.stringify(booking));
   if (state.rate.booking_unit === 'month') { mountBookingContract(); return; }
