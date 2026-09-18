@@ -56,7 +56,7 @@ begin
     local_end := occurrence_end at time zone 'America/Sao_Paulo';
 
     if occurrence_start < now() or occurrence_end <= occurrence_start then raise exception 'Horário inválido'; end if;
-    if previous_date is not null and local_start::date <> previous_date + 1 then raise exception 'As datas devem ser consecutivas'; end if;
+    if previous_date is not null and local_start::date <> previous_date + (case when extract(dow from previous_date) = 6 then 2 else 1 end) then raise exception 'As datas devem ser consecutivas'; end if;
     if extract(dow from local_start) = 0 or (selected_rate.days_of_week is not null and not extract(dow from local_start) = any(selected_rate.days_of_week)) then raise exception 'Uma das datas não está disponível para esta modalidade'; end if;
 
     if selected_rate.booking_unit = 'hour' then

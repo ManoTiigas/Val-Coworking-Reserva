@@ -11,7 +11,7 @@ export function consecutiveDays(firstDay, lastDay) {
   const days = [];
 
   for (const day = new Date(from); day <= to; day.setDate(day.getDate() + 1)) {
-    days.push(new Date(day));
+    if (day.getDay() !== 0) days.push(new Date(day));
   }
 
   return days;

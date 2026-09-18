@@ -19,6 +19,13 @@ test('lists every day in a consecutive reservation interval', () => {
   );
 });
 
+test('excludes Sunday from a reservation interval', () => {
+  assert.deepEqual(
+    consecutiveDays(new Date(2026, 8, 18), new Date(2026, 8, 21)).map((day) => day.toISOString().slice(0, 10)),
+    ['2026-09-18', '2026-09-19', '2026-09-21']
+  );
+});
+
 test('disables only monthly rates when multiple days are selected', () => {
   const days = [new Date(2026, 8, 10), new Date(2026, 8, 11)];
   assert.equal(isRateAvailableForDays(dayRate, days), true);

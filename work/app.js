@@ -226,7 +226,7 @@ function calendar() {
   $('month-label').textContent = first.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   $('calendar').innerHTML = Array(first.getDay()).fill('<i></i>').join('') + Array.from({ length: days }, (_, index) => {
     const date = new Date(state.date.getFullYear(), state.date.getMonth(), index + 1);
-    const closed = date < today || (date.getDay() === 0 && state.space?.code !== 'rooftop');
+    const closed = date < today || date.getDay() === 0;
     const chosen = selectedDays().some((selectedDay) => iso(date) === iso(selectedDay));
     return `<button class="day ${chosen ? 'active' : ''}" data-day="${iso(date)}" ${closed ? 'disabled' : ''}>${date.getDate()}</button>`;
   }).join('');
