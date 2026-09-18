@@ -29,11 +29,11 @@ function bookingRow(booking) {
   const endsAt = new Date(booking.end_at);
   const status = labels[booking.status] || booking.status;
   return `<tr>
-    <td><strong>${booking.booking_code}</strong><small>Criada em ${date.format(new Date(booking.created_at))}</small></td>
-    <td><strong>${booking.customer_name}</strong><small>${booking.customer_email}<br/>${booking.customer_phone}</small></td>
-    <td>${booking.spaces?.name || '—'}</td>
-    <td>${date.format(startsAt)}<small>${time.format(startsAt)} — ${time.format(endsAt)}</small></td>
-    <td><span class="badge ${booking.status}">${status}</span></td>
+    <td data-label="Reserva"><strong>${booking.booking_code}</strong><small>Criada em ${date.format(new Date(booking.created_at))}</small></td>
+    <td data-label="Cliente"><strong>${booking.customer_name}</strong><small>${booking.customer_email}<br/>${booking.customer_phone}</small></td>
+    <td data-label="Espaço">${booking.spaces?.name || '—'}</td>
+    <td data-label="Data e horário">${date.format(startsAt)}<small>${time.format(startsAt)} — ${time.format(endsAt)}</small></td>
+    <td data-label="Status"><span class="badge ${booking.status}">${status}</span></td>
   </tr>`;
 }
 
