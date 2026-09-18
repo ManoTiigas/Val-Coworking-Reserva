@@ -1,10 +1,3 @@
-alter table public.bookings
-  add column if not exists booking_group_id uuid;
-
-create index if not exists bookings_booking_group_id_idx
-  on public.bookings (booking_group_id)
-  where booking_group_id is not null;
-
 create or replace function public.create_multi_day_booking_hold(
   p_space_id uuid,
   p_rate_id uuid,
@@ -102,6 +95,3 @@ begin
 exception when exclusion_violation then raise exception 'Uma ou mais datas ou horários já estão reservados';
 end;
 $$;
-
-revoke execute on function public.create_multi_day_booking_hold(uuid, uuid, jsonb, text, text, text, text, text, text) from public;
-grant execute on function public.create_multi_day_booking_hold(uuid, uuid, jsonb, text, text, text, text, text, text) to anon, authenticated;
