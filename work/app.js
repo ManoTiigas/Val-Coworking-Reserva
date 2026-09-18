@@ -242,6 +242,7 @@ function calendar() {
       }
       state.rate = null;
       state.slot = null;
+      notice('');
       calendar();
       renderRates();
     };
@@ -340,6 +341,7 @@ async function renderSlots() {
       state.slot = null;
       $('times').innerHTML = '';
       $('time-help').textContent = 'Esta diária começa em um horário que já passou. Escolha uma data futura.';
+      notice('Sua reserva começa hoje, mas a diária inicia às 08:00, horário que já passou. Escolha uma data futura.');
       return;
     }
     if (overlaps(selected)) {
@@ -354,7 +356,15 @@ async function renderSlots() {
     renderSummary();
     return;
   }
-  $('time-help').textContent = selectedDays().length > 1 ? 'Escolha um horário disponível em todas as datas.' : 'Escolha um horário disponível.';
+  const hasPastSlot = slots.some((slot) => !isBookableAtCurrentTime(slot));
+  if (hasPastSlot) {
+    notice('Sua reserva começa hoje. Horários que já passaram não podem ser reservados; escolha um horário futuro.');
+  } else {
+    notice('');
+  }
+  $('time-help').textContent = hasPastSlot
+    ? 'Horários já passados estão indisponíveis. Escolha um horário futuro disponível em todas as datas.'
+    : selectedDays().length > 1 ? 'Escolha um horário disponível em todas as datas.' : 'Escolha um horário disponível.';
   $('times').innerHTML = slots.map((slot) => {
     const busy = overlaps(slot) || !isBookableAtCurrentTime(slot);
     return `<button class="time ${state.slot?.key === slot.key ? 'active' : ''}" data-slot="${slot.key}" ${busy ? 'disabled' : ''}>${slot.label}</button>`;
