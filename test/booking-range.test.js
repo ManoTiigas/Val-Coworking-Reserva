@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   consecutiveDays,
   isRateAvailableForDays,
+  isFutureRange,
   bookingTotalCents,
   occurrenceRanges
 } from '../work/booking-range.js';
@@ -17,6 +18,12 @@ test('lists every day in a consecutive reservation interval', () => {
     consecutiveDays(new Date(2026, 8, 10), new Date(2026, 8, 12)).map((day) => day.toISOString().slice(0, 10)),
     ['2026-09-10', '2026-09-11', '2026-09-12']
   );
+});
+
+test('rejects a range whose start time has already passed', () => {
+  const now = new Date('2026-09-18T15:30:00-03:00');
+  assert.equal(isFutureRange({ start: new Date('2026-09-18T08:00:00-03:00'), end: new Date('2026-09-18T18:00:00-03:00') }, now), false);
+  assert.equal(isFutureRange({ start: new Date('2026-09-18T16:00:00-03:00'), end: new Date('2026-09-18T17:00:00-03:00') }, now), true);
 });
 
 test('excludes Sunday from a reservation interval', () => {

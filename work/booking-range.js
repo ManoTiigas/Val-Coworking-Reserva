@@ -21,6 +21,10 @@ export function isRateAvailableForDays(rate, days) {
   return days.length === 1 || ['day', 'hour'].includes(rate.booking_unit);
 }
 
+export function isFutureRange({ start }, now = new Date()) {
+  return start.getTime() > now.getTime();
+}
+
 export function bookingTotalCents(rate, dayCount) {
   return rate.price_cents * (rate.booking_unit === 'month' ? 1 : dayCount);
 }

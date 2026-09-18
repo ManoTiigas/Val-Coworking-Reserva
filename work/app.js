@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { bookingTotalCents, consecutiveDays, isRateAvailableForDays, occurrenceRanges } from './booking-range.js';
+import { bookingTotalCents, consecutiveDays, isFutureRange, isRateAvailableForDays, occurrenceRanges } from './booking-range.js';
 
 const sb = createClient(import.meta.env.VITE_SUPABASE_URL || 'https://htsnhqyhhlzqjgqlgkvt.supabase.co', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_l1jEP6P84wREppUZwEHwSw_RRw8Ht5y');
 const mercadoPagoPublicKey = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || 'APP_USR-02015adc-df8b-4c73-ae52-80796f6e4284';
@@ -328,6 +328,7 @@ async function renderSlots() {
     return;
   }
   const occupied = Array.isArray(data) ? data : [];
+  const isBookableAtCurrentTime = (slot) => selectedSlotRanges(slot).every((candidate) => isFutureRange(candidate));
   const overlaps = (slot) => selectedSlotRanges(slot).some((candidate) => occupied.some((booking) => {
     const start = new Date(booking.start_at).getTime();
     const end = new Date(booking.end_at).getTime();
@@ -335,6 +336,12 @@ async function renderSlots() {
   }));
   if (state.rate.booking_unit !== 'hour') {
     const selected = slots[0];
+    if (!isBookableAtCurrentTime(selected)) {
+      state.slot = null;
+      $('times').innerHTML = '';
+      $('time-help').textContent = 'Esta diária começa em um horário que já passou. Escolha uma data futura.';
+      return;
+    }
     if (overlaps(selected)) {
       state.slot = null;
       $('times').innerHTML = '';
@@ -349,7 +356,7 @@ async function renderSlots() {
   }
   $('time-help').textContent = selectedDays().length > 1 ? 'Escolha um horário disponível em todas as datas.' : 'Escolha um horário disponível.';
   $('times').innerHTML = slots.map((slot) => {
-    const busy = overlaps(slot);
+    const busy = overlaps(slot) || !isBookableAtCurrentTime(slot);
     return `<button class="time ${state.slot?.key === slot.key ? 'active' : ''}" data-slot="${slot.key}" ${busy ? 'disabled' : ''}>${slot.label}</button>`;
   }).join('');
   document.querySelectorAll('[data-slot]').forEach((button) => {
