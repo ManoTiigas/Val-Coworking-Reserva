@@ -59,11 +59,12 @@
       </section>
 
       <section class="panel archive-panel" aria-labelledby="archive-title">
-        <div class="panel-heading">
+        <span class="archive-icon" aria-hidden="true">⇩</span>
+        <div class="archive-heading">
           <p class="eyebrow">ARQUIVO</p>
-          <h2 id="archive-title">Expiradas para CSV</h2>
+          <h2 id="archive-title">Exportar CSV</h2>
+          <p class="archive-copy">Reservas expiradas há mais de sete dias, organizadas por mês.</p>
         </div>
-        <p class="archive-copy">Após sete dias expiradas, as reservas saem da lista recente e permanecem disponíveis aqui por mês.</p>
         <div class="archive-actions">
           <label>Mês de expiração<select id="archive-month" disabled><option value="">Nenhum mês disponível</option></select></label>
           <button id="export-archive" type="button" disabled>Baixar CSV</button>
