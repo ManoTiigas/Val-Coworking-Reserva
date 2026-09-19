@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { pageBounds } from './admin-pagination.js';
 
 const sb = createClient(
   import.meta.env.VITE_SUPABASE_URL || 'https://htsnhqyhhlzqjgqlgkvt.supabase.co',
@@ -14,6 +15,8 @@ const labels = {
 };
 const date = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' });
 const time = new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' });
+const pageSize = 10;
+let currentPage = 1;
 
 function setMessage(id, text = '') {
   $(id).textContent = text;
@@ -37,32 +40,49 @@ function bookingRow(booking) {
   </tr>`;
 }
 
-function render(bookings) {
-  $('stat-pending').textContent = bookings.filter((booking) => booking.status === 'pending_payment').length;
-  $('stat-paid').textContent = bookings.filter((booking) => booking.status === 'paid').length;
-  $('stat-cancelled').textContent = bookings.filter((booking) => booking.status === 'cancelled').length;
-  $('stat-total').textContent = bookings.length;
+function renderPagination(total) {
+  const { totalPages } = pageBounds({ total, page: currentPage, pageSize });
+  $('bookings-pagination').hidden = total <= pageSize;
+  $('pagination-info').textContent = `Página ${currentPage} de ${totalPages}`;
+  $('previous-page').disabled = currentPage === 1;
+  $('next-page').disabled = currentPage === totalPages;
+}
+
+function render(bookings, counts) {
+  $('stat-pending').textContent = counts.pending;
+  $('stat-paid').textContent = counts.paid;
+  $('stat-cancelled').textContent = counts.cancelled;
+  $('stat-total').textContent = counts.total;
   $('bookings-list').innerHTML = bookings.length
     ? bookings.map(bookingRow).join('')
     : '<tr><td class="empty" colspan="5">Nenhuma reserva encontrada.</td></tr>';
+  renderPagination(counts.total);
 }
 
-async function loadBookings() {
+async function loadBookings(page = currentPage) {
+  currentPage = Math.max(1, page);
   setMessage('dashboard-message', 'Carregando reservas…');
-  const { data, error } = await sb
-    .from('bookings')
-    .select('booking_code,customer_name,customer_email,customer_phone,start_at,end_at,status,created_at,spaces(name)')
-    .order('start_at', { ascending: false });
+  const from = (currentPage - 1) * pageSize;
+  const [pageResult, pendingResult, paidResult, cancelledResult] = await Promise.all([
+    sb.from('bookings').select('booking_code,customer_name,customer_email,customer_phone,start_at,end_at,status,created_at,spaces(name)', { count: 'exact' }).order('start_at', { ascending: false }).range(from, from + pageSize - 1),
+    sb.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'pending_payment'),
+    sb.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'paid'),
+    sb.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'cancelled'),
+  ]);
+  const { data, error, count } = pageResult;
 
-  if (error) {
-    render([]);
+  if (error || pendingResult.error || paidResult.error || cancelledResult.error) {
+    render([], { pending: 0, paid: 0, cancelled: 0, total: 0 });
     setMessage('dashboard-message', error.code === '42501'
       ? 'Seu usuário não tem acesso às reservas.'
       : 'Não foi possível carregar as reservas.');
     return;
   }
 
-  render(data || []);
+  const total = count || 0;
+  const { totalPages } = pageBounds({ total, page: currentPage, pageSize });
+  if (currentPage > totalPages) return loadBookings(totalPages);
+  render(data || [], { pending: pendingResult.count || 0, paid: paidResult.count || 0, cancelled: cancelledResult.count || 0, total });
   setMessage('dashboard-message');
 }
 
@@ -86,6 +106,9 @@ $('login-form').addEventListener('submit', async (event) => {
   }
   setMessage('login-message');
 });
+
+$('previous-page').addEventListener('click', () => loadBookings(currentPage - 1));
+$('next-page').addEventListener('click', () => loadBookings(currentPage + 1));
 
 sb.auth.onAuthStateChange((_event, session) => {
   showDashboard(Boolean(session));
