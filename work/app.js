@@ -117,7 +117,7 @@ function renderSummary() {
 
 function renderPayment() {
   if (!state.booking) return;
-  const paymentWindow = state.booking.payment_started_at ? `<div id="payment-countdown" class="payment-countdown"><i class="ph ph-clock-countdown"></i><span>Tempo restante para pagar<b>--:--</b></span></div>` : '<small>O prazo de 30 minutos começa quando você escolher Pix ou Cartão.</small>';
+  const paymentWindow = state.booking.payment_started_at ? `<div id="payment-countdown" class="payment-countdown"><i class="ph ph-clock-countdown"></i><span>Tempo restante para pagar<b>--:--</b></span></div>` : '<small>O prazo de 10 minutos começa quando você escolher Pix ou Cartão.</small>';
   $('payment-summary').innerHTML = `<div class="booking-ref"><span>RESERVA</span>${state.booking.booking_code}</div><div class="booking-details"><div class="booking-detail"><small>Espaço</small><b>${state.booking.space_name}</b></div><div class="booking-detail"><small>Horário</small><b>${state.booking.slot_label}</b></div><div class="booking-detail total"><small>Total a pagar</small><b>${money(state.booking.amount_cents)}</b></div></div>${paymentWindow}`;
   if (state.booking.payment_started_at) startPaymentCountdown();
 }
