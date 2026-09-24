@@ -169,6 +169,7 @@ async function openCardPayment() {
     window.cardPaymentBrickController = await bricks.create('cardPayment', 'card-payment-area', {
       initialization: { amount: state.booking.amount_cents / 100 },
       callbacks: {
+        onReady: () => {},
         onSubmit: (formData, additionalData) => new Promise(async (resolve, reject) => {
           const { data, error } = await sb.functions.invoke('mercado-pago-card', {
             body: {
