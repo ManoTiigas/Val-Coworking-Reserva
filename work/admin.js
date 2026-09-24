@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { archiveMonthKey, buildArchiveCsv } from './admin-archive.js';
+import { groupBookings } from './admin-booking-groups.js';
 import { pageBounds } from './admin-pagination.js';
 
 const sb = createClient(
@@ -44,11 +45,14 @@ function bookingRow(booking) {
   const startsAt = new Date(booking.start_at);
   const endsAt = new Date(booking.end_at);
   const status = labels[booking.status] || booking.status;
+  const bookingPeriod = booking.is_multi_day
+    ? `<strong>Reservado de ${date.format(startsAt)} a ${date.format(endsAt)}</strong><small>${booking.day_count} dias • ${time.format(startsAt)} — ${time.format(endsAt)}</small>`
+    : `${date.format(startsAt)}<small>${time.format(startsAt)} — ${time.format(endsAt)}</small>`;
   return `<tr>
     <td data-label="Reserva"><strong>${booking.booking_code}</strong><small>Criada em ${date.format(new Date(booking.created_at))}</small></td>
     <td data-label="Cliente"><strong>${booking.customer_name}</strong><small>${booking.customer_email}<br/>${booking.customer_phone}</small></td>
     <td data-label="Espaço">${booking.spaces?.name || '—'}</td>
-    <td data-label="Data e horário">${date.format(startsAt)}<small>${time.format(startsAt)} — ${time.format(endsAt)}</small></td>
+    <td data-label="Data e horário">${bookingPeriod}</td>
     <td data-label="Status"><span class="badge ${booking.status}">${status}</span></td>
   </tr>`;
 }
@@ -61,7 +65,7 @@ function renderPagination(total) {
   $('next-page').disabled = currentPage === totalPages;
 }
 
-function render(bookings, counts) {
+function render(bookings, counts, total) {
   $('stat-pending').textContent = counts.pending;
   $('stat-paid').textContent = counts.paid;
   $('stat-cancelled').textContent = counts.cancelled;
@@ -69,35 +73,36 @@ function render(bookings, counts) {
   $('bookings-list').innerHTML = bookings.length
     ? bookings.map(bookingRow).join('')
     : '<tr><td class="empty" colspan="5">Nenhuma reserva encontrada.</td></tr>';
-  renderPagination(counts.total);
+  renderPagination(total);
 }
 
 async function loadBookings(page = currentPage) {
   currentPage = Math.max(1, page);
   setMessage('dashboard-message', 'Carregando reservas…');
-  const from = (currentPage - 1) * pageSize;
   const cutoff = expirationCutoff();
-  const [pageResult, pendingResult, paidResult, cancelledResult] = await Promise.all([
-    sb.from('bookings').select('booking_code,customer_name,customer_email,customer_phone,start_at,end_at,status,created_at,spaces(name)', { count: 'exact' }).or(`status.neq.expired,hold_expires_at.gte.${cutoff}`).order('start_at', { ascending: false }).range(from, from + pageSize - 1),
+  const [bookingsResult, pendingResult, paidResult, cancelledResult] = await Promise.all([
+    sb.from('bookings').select('id,booking_group_id,booking_code,customer_name,customer_email,customer_phone,start_at,end_at,status,created_at,spaces(name)').or(`status.neq.expired,hold_expires_at.gte.${cutoff}`).order('start_at', { ascending: false }),
     sb.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'pending_payment'),
     sb.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'paid'),
     sb.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'cancelled'),
   ]);
-  const { data, error, count } = pageResult;
+  const { data, error } = bookingsResult;
 
   if (error || pendingResult.error || paidResult.error || cancelledResult.error) {
     const requestError = error || pendingResult.error || paidResult.error || cancelledResult.error;
-    render([], { pending: 0, paid: 0, cancelled: 0, total: 0 });
+    render([], { pending: 0, paid: 0, cancelled: 0, total: 0 }, 0);
     setMessage('dashboard-message', requestError.code === '42501'
       ? 'Seu usuário não tem acesso às reservas.'
       : 'Não foi possível carregar as reservas.');
     return;
   }
 
-  const total = count || 0;
+  const bookings = groupBookings(data || []);
+  const total = bookings.length;
   const { totalPages } = pageBounds({ total, page: currentPage, pageSize });
   if (currentPage > totalPages) return loadBookings(totalPages);
-  render(data || [], { pending: pendingResult.count || 0, paid: paidResult.count || 0, cancelled: cancelledResult.count || 0, total });
+  const from = (currentPage - 1) * pageSize;
+  render(bookings.slice(from, from + pageSize), { pending: pendingResult.count || 0, paid: paidResult.count || 0, cancelled: cancelledResult.count || 0, total }, total);
   setMessage('dashboard-message');
 }
 
