@@ -26,7 +26,7 @@ Deno.serve(async req=>{
   if(action==="card"&&app.payment_reference)return reply({error:"Já existe um pagamento em processamento para este plano."},409);
   const amount=(app.amount_cents/100).toFixed(2);
   const payment=action==="pix"
-    ? {amount,payment_method:{id:"pix",type:"bank_transfer"},expiration_time:"P1D"}
+    ? {amount,payment_method:{id:"pix",type:"bank_transfer"},expiration_time:"PT30M"}
     : {amount,payment_method:{id:payment_method_id,type:payment_type,token:card_token,installments:Number(installments)||1}};
   if(action==="card"&&(!card_token||!payment_method_id||!["credit_card","debit_card"].includes(payment_type)))return reply({error:"Dados do cartão inválidos"},400);
   const response=await fetch("https://api.mercadopago.com/v1/orders",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json",Authorization:`Bearer ${access}`,"X-Idempotency-Key":action==="pix"?`plan-pix-${app.id}`:crypto.randomUUID()},body:JSON.stringify({type:"online",processing_mode:"automatic",total_amount:amount,external_reference:app.request_code,payer:{email:app.customer_email},description:`Plano ${app.plan_name}`,transactions:{payments:[payment]}})});

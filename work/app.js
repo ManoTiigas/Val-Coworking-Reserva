@@ -114,7 +114,7 @@ function renderSummary() {
 
 function renderPayment() {
   if (!state.booking) return;
-  $('payment-summary').innerHTML = `<div class="booking-ref"><span>RESERVA</span>${state.booking.booking_code}</div><div class="booking-details"><div class="booking-detail"><small>Espaço</small><b>${state.booking.space_name}</b></div><div class="booking-detail"><small>Horário</small><b>${state.booking.slot_label}</b></div><div class="booking-detail total"><small>Total a pagar</small><b>${money(state.booking.amount_cents)}</b></div></div><small>Seu horário está reservado por 24 horas.</small>`;
+  $('payment-summary').innerHTML = `<div class="booking-ref"><span>RESERVA</span>${state.booking.booking_code}</div><div class="booking-details"><div class="booking-detail"><small>Espaço</small><b>${state.booking.space_name}</b></div><div class="booking-detail"><small>Horário</small><b>${state.booking.slot_label}</b></div><div class="booking-detail total"><small>Total a pagar</small><b>${money(state.booking.amount_cents)}</b></div></div><small>Seu horário está reservado por 30 minutos.</small>`;
 }
 
 async function createPix() {
