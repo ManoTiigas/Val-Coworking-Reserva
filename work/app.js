@@ -116,8 +116,22 @@ function renderSummary() {
 
 function renderPayment() {
   if (!state.booking) return;
-  $('payment-summary').innerHTML = `<div class="booking-ref"><span>RESERVA</span>${state.booking.booking_code}</div><div class="booking-details"><div class="booking-detail"><small>Espaço</small><b>${state.booking.space_name}</b></div><div class="booking-detail"><small>Horário</small><b>${state.booking.slot_label}</b></div><div class="booking-detail total"><small>Total a pagar</small><b>${money(state.booking.amount_cents)}</b></div></div><div id="payment-countdown" class="payment-countdown"><i class="ph ph-clock-countdown"></i><span>Tempo restante para pagar<b>--:--</b></span></div>`;
-  startPaymentCountdown();
+  const paymentWindow = state.booking.payment_started_at ? `<div id="payment-countdown" class="payment-countdown"><i class="ph ph-clock-countdown"></i><span>Tempo restante para pagar<b>--:--</b></span></div>` : '<small>O prazo de 30 minutos começa quando você escolher Pix ou Cartão.</small>';
+  $('payment-summary').innerHTML = `<div class="booking-ref"><span>RESERVA</span>${state.booking.booking_code}</div><div class="booking-details"><div class="booking-detail"><small>Espaço</small><b>${state.booking.space_name}</b></div><div class="booking-detail"><small>Horário</small><b>${state.booking.slot_label}</b></div><div class="booking-detail total"><small>Total a pagar</small><b>${money(state.booking.amount_cents)}</b></div></div>${paymentWindow}`;
+  if (state.booking.payment_started_at) startPaymentCountdown();
+}
+
+async function startPaymentWindow() {
+  const { data, error } = await sb.rpc('start_booking_payment_window', {
+    p_booking_id: state.booking.id,
+    p_payment_token: state.booking.payment_token
+  });
+  if (error) throw new Error(error.message);
+  const window = Array.isArray(data) ? data[0] : data;
+  if (!window?.hold_expires_at) throw new Error('Não foi possível iniciar o prazo de pagamento.');
+  state.booking = { ...state.booking, ...window };
+  sessionStorage.setItem('val-coworking-payment', JSON.stringify(state.booking));
+  renderPayment();
 }
 
 function startPaymentCountdown() {
@@ -144,6 +158,14 @@ async function createPix() {
   const button = $('pay-pix');
   button.disabled = true;
   button.textContent = 'Gerando Pix…';
+  try {
+    await startPaymentWindow();
+  } catch (error) {
+    button.disabled = false;
+    button.innerHTML = pixButtonMarkup();
+    notice(error.message || 'Não foi possível iniciar o pagamento.');
+    return;
+  }
   const { data, error } = await sb.functions.invoke('mercado-pago-pix', {
     body: { booking_id: state.booking.id, payment_token: state.booking.payment_token }
   });
@@ -180,6 +202,12 @@ async function loadMercadoPagoSdk() {
 
 async function openCardPayment() {
   if (!state.booking) return;
+  try {
+    await startPaymentWindow();
+  } catch (error) {
+    notice(error.message || 'Não foi possível iniciar o pagamento.');
+    return;
+  }
   const area = document.createElement('div');
   area.id = 'card-payment-area';
   document.querySelector('.payment-methods').after(area);
