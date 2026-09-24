@@ -15,5 +15,5 @@ test('new reservations and Pix orders use a 30-minute payment limit', async () =
   assert.match(multiHold, /create_multi_day_booking_hold[\s\S]*interval '30 minutes'/);
   assert.match(pix, /expiration_time:"PT30M"/);
   assert.match(planPayment, /expiration_time:"PT30M"/);
-  assert.match(checkout, /reservado por 30 minutos/);
+  assert.match(checkout, /Tempo restante para pagar/);
 });

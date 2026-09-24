@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { bookingTotalCents, consecutiveDays, isFutureRange, isRateAvailableForDays, occurrenceRanges } from './booking-range.js';
+import { formatPaymentTime, paymentTimeRemaining } from './payment-timer.js';
 
 const sb = createClient(import.meta.env.VITE_SUPABASE_URL || 'https://htsnhqyhhlzqjgqlgkvt.supabase.co', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_l1jEP6P84wREppUZwEHwSw_RRw8Ht5y');
 const mercadoPagoPublicKey = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || 'APP_USR-02015adc-df8b-4c73-ae52-80796f6e4284';
@@ -17,12 +18,13 @@ const bookingFlowStyle = document.createElement('style');
 bookingFlowStyle.textContent = `.choice{position:relative;display:flex;align-items:flex-end;min-height:112px;padding:16px;isolation:isolate}.choice b{position:relative;z-index:1;font-family:'DM Sans',Arial,sans-serif;font-size:clamp(18px,2.5vw,23px);font-weight:700;line-height:1.05;letter-spacing:-.04em;text-shadow:0 2px 10px rgba(0,0,0,.78)}.choice.active{box-shadow:0 0 0 2px #d9a64b,0 10px 24px rgba(0,0,0,.35)}.rate-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}.rate-option{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:70px;padding:13px;border:1px solid #d9a64b;border-radius:12px;background:#003833;color:#fff;font:inherit;text-align:left;cursor:pointer}.rate-option strong{font-size:18px}.rate-option small{color:#bdd1cb}.rate-option.active{background:#d9a64b;color:#001e1b}.rate-option.active small{color:#244039}@media(max-width:520px){.choice{min-height:96px}.rate-grid{grid-template-columns:1fr}}`;
 document.head.appendChild(bookingFlowStyle);
 const paymentEaseStyle = document.createElement('style');
-paymentEaseStyle.textContent = `#payment-summary{display:grid!important;gap:13px!important}.booking-ref{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;font-size:14px;font-weight:800}.booking-ref span{padding:5px 8px;border-radius:999px;background:rgba(217,166,75,.16);color:#e5b14e;font-size:10px;letter-spacing:.06em}.booking-details{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid rgba(217,166,75,.24)}.booking-detail{display:grid;gap:2px}.booking-detail small{color:#aabdb8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.booking-detail b{color:#fff;font-size:14px}.booking-detail.total{grid-column:1/-1;padding-top:10px;border-top:1px solid rgba(217,166,75,.18)}.booking-detail.total b{color:#e5b14e;font-size:20px}.payment-help{margin:20px 0 10px!important;color:#dce8e4!important;font-size:14px!important}.payment-methods{gap:12px!important;margin:0!important}.payment-methods .payment-choice{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;min-height:76px!important;padding:14px 17px!important;border:1px solid rgba(217,166,75,.58)!important;border-radius:13px!important;text-align:left!important}.payment-methods .payment-choice--recommended{background:#d9a64b!important;color:#001e1b!important;border-color:#d9a64b!important}.payment-choice .method-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:rgba(0,30,27,.13);font-size:20px}.payment-choice:not(.payment-choice--recommended) .method-icon{background:rgba(217,166,75,.13);color:#e5b14e}.payment-choice .method-copy{display:grid;gap:3px}.payment-choice .method-copy b{font-size:14px}.payment-choice .method-copy small{font-size:11px;font-weight:500;opacity:.78}.payment-methods .payment-choice i{font-size:20px!important}.payment-choice .method-arrow{margin-left:auto;font-size:18px!important}@media(max-width:520px){.booking-details{grid-template-columns:1fr}.payment-methods .payment-choice{min-height:70px!important}}`;
+paymentEaseStyle.textContent = `#payment-summary{display:grid!important;gap:13px!important}.booking-ref{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;font-size:14px;font-weight:800}.booking-ref span{padding:5px 8px;border-radius:999px;background:rgba(217,166,75,.16);color:#e5b14e;font-size:10px;letter-spacing:.06em}.booking-details{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid rgba(217,166,75,.24)}.booking-detail{display:grid;gap:2px}.booking-detail small{color:#aabdb8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.booking-detail b{color:#fff;font-size:14px}.booking-detail.total{grid-column:1/-1;padding-top:10px;border-top:1px solid rgba(217,166,75,.18)}.booking-detail.total b{color:#e5b14e;font-size:20px}.payment-countdown{display:flex;align-items:center;gap:10px;margin-top:3px;padding:12px 13px;border:1px solid rgba(224,174,78,.45);border-radius:12px;background:rgba(224,174,78,.1);color:#fff}.payment-countdown i{font-size:21px;color:#e5b14e}.payment-countdown span{display:grid;gap:2px;font-size:11px;color:#c8d8d3}.payment-countdown b{font-size:23px;letter-spacing:.06em;color:#fff}.payment-countdown.expired{border-color:rgba(240,106,106,.6);background:rgba(170,35,35,.2)}.payment-countdown.expired i,.payment-countdown.expired b{color:#ffc1c1}.payment-help{margin:20px 0 10px!important;color:#dce8e4!important;font-size:14px!important}.payment-methods{gap:12px!important;margin:0!important}.payment-methods .payment-choice{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;min-height:76px!important;padding:14px 17px!important;border:1px solid rgba(217,166,75,.58)!important;border-radius:13px!important;text-align:left!important}.payment-methods .payment-choice--recommended{background:#d9a64b!important;color:#001e1b!important;border-color:#d9a64b!important}.payment-choice .method-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:rgba(0,30,27,.13);font-size:20px}.payment-choice:not(.payment-choice--recommended) .method-icon{background:rgba(217,166,75,.13);color:#e5b14e}.payment-choice .method-copy{display:grid;gap:3px}.payment-choice .method-copy b{font-size:14px}.payment-choice .method-copy small{font-size:11px;font-weight:500;opacity:.78}.payment-methods .payment-choice i{font-size:20px!important}.payment-choice .method-arrow{margin-left:auto;font-size:18px!important}@media(max-width:520px){.booking-details{grid-template-columns:1fr}.payment-methods .payment-choice{min-height:70px!important}}`;
 document.head.appendChild(paymentEaseStyle);
 const $ = (id) => document.getElementById(id);
 const steps = ['espaco', 'agenda', 'dados', 'contrato', 'pagamento'];
 const state = { space: null, date: new Date(), day: null, days: [], rate: null, slot: null, booking: null };
 let availabilityRequest = 0;
+let paymentCountdownInterval;
 const monthlyContractStep = document.createElement('section');
 monthlyContractStep.className = 'step';
 monthlyContractStep.dataset.step = 'contrato';
@@ -114,7 +116,27 @@ function renderSummary() {
 
 function renderPayment() {
   if (!state.booking) return;
-  $('payment-summary').innerHTML = `<div class="booking-ref"><span>RESERVA</span>${state.booking.booking_code}</div><div class="booking-details"><div class="booking-detail"><small>Espaço</small><b>${state.booking.space_name}</b></div><div class="booking-detail"><small>Horário</small><b>${state.booking.slot_label}</b></div><div class="booking-detail total"><small>Total a pagar</small><b>${money(state.booking.amount_cents)}</b></div></div><small>Seu horário está reservado por 30 minutos.</small>`;
+  $('payment-summary').innerHTML = `<div class="booking-ref"><span>RESERVA</span>${state.booking.booking_code}</div><div class="booking-details"><div class="booking-detail"><small>Espaço</small><b>${state.booking.space_name}</b></div><div class="booking-detail"><small>Horário</small><b>${state.booking.slot_label}</b></div><div class="booking-detail total"><small>Total a pagar</small><b>${money(state.booking.amount_cents)}</b></div></div><div id="payment-countdown" class="payment-countdown"><i class="ph ph-clock-countdown"></i><span>Tempo restante para pagar<b>--:--</b></span></div>`;
+  startPaymentCountdown();
+}
+
+function startPaymentCountdown() {
+  window.clearInterval(paymentCountdownInterval);
+  const countdown = $('payment-countdown');
+  if (!countdown || !state.booking?.hold_expires_at) return;
+  const update = () => {
+    const seconds = paymentTimeRemaining(state.booking.hold_expires_at);
+    countdown.querySelector('b').textContent = formatPaymentTime(seconds);
+    if (seconds > 0) return;
+    window.clearInterval(paymentCountdownInterval);
+    countdown.classList.add('expired');
+    countdown.querySelector('span').firstChild.textContent = 'Tempo para pagamento encerrado';
+    $('pay-pix').disabled = true;
+    $('pay-card').disabled = true;
+    window.cardPaymentBrickController?.unmount();
+  };
+  update();
+  paymentCountdownInterval = window.setInterval(update, 1000);
 }
 
 async function createPix() {
