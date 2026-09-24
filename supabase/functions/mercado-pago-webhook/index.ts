@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { paymentStatusTarget } from "../_shared/booking-payment-group.js";
 const encoder=new TextEncoder();
 function parseSignature(value:string){const parts=Object.fromEntries(value.split(",").map(part=>{const[key,...rest]=part.trim().split("=");return[key,rest.join("=")];}));return{ts:parts.ts,v1:parts.v1};}
 function toHex(bytes:Uint8Array){return Array.from(bytes,byte=>byte.toString(16).padStart(2,"0")).join("");}
@@ -15,8 +16,13 @@ Deno.serve(async request=>{
   if(!paid)return Response.json({received:true,paid:false});
   const sb=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const payment={status:"paid",paid_at:new Date().toISOString(),payment_provider:"mercado_pago"};
+  const {data:paymentBooking,error:paymentBookingError}=await sb.from("bookings").select("id,booking_group_id").eq("payment_reference",orderId).maybeSingle();
+  if(paymentBookingError)return new Response("Payment lookup failed",{status:500});
+  let bookingUpdate=sb.from("bookings").update(payment).eq("status","pending_payment");
+  if(paymentBooking)for(const[column,value]of Object.entries(paymentStatusTarget(paymentBooking)))bookingUpdate=bookingUpdate.eq(column,value);
+  else bookingUpdate=bookingUpdate.eq("payment_reference",orderId);
   const [booking,plan]=await Promise.all([
-    sb.from("bookings").update(payment).eq("payment_reference",orderId).eq("status","pending_payment").select("id").maybeSingle(),
+    bookingUpdate.select("id"),
     sb.from("plan_applications").update({payment_status:"paid",paid_at:new Date().toISOString(),payment_provider:"mercado_pago"}).eq("payment_reference",orderId).neq("payment_status","paid").select("id").maybeSingle()
   ]);
   if(booking.error||plan.error){console.error("payment update failed",booking.error?.message,plan.error?.message);return new Response("Payment update failed",{status:500});}
